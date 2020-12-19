@@ -41,10 +41,10 @@ async def store_link(ctx, name: str):
     pub_chk = await acc.public_check
     response = ''
     if(acc.valid_battletag and pub_chk ):
+        await db.upsert_player(ctx.message.author.name, name)
         response += f"{ctx.message.author.name} is now linked to {name}"
     else:
         response += f"Something went wrong with error: {acc.error}"
-    db.upsert_player(ctx.message.author.name, name)
 
     await ctx.send(response)
     

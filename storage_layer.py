@@ -1,6 +1,13 @@
 import sqlite3
 from sqlite3 import Error
 
+"""
+SUPER FUCKING IMPORTANTANTO - It is in Spanish so you know how seroius I am 
+
+use tuple substitution api layer, instead of f strings or % substitution for injecting params 
+Otherwise bobby drop tables USER; will strike again
+"""
+
 class Storage():
     """
     Class for handling sqlite storage of data
@@ -33,10 +40,21 @@ class Storage():
         return conn
 
 
-    def upsert_player(self, discord_name: str, battle_tag:str):
+    async def upsert_player(self, discord_name: str, battle_tag:str):
         """
         Inserts or updates a player based on the idea the battle tag will not change but the discord name might
         """
-        sql = f"INSERT INTO players(discord_name ,battle_tag) VALUES('{discord_name}','{battle_tag}') ON CONFLICT(battle_tag) DO UPDATE SET discord_name=excluded.battle_tag;"
-        self.conn.cursor().execute(sql)
+        t = (discord_name, battle_tag)
+        self.conn.cursor().execute('INSERT INTO players(discord_name ,battle_tag) VALUES(?,?) ON CONFLICT(battle_tag) DO UPDATE SET discord_name=excluded.battle_tag;', t)
         self.conn.commit()
+    
+    async def get_battltag(self, discord_name: str):
+        """
+        Gets te battletag assigned ot the discord user
+        """
+        c= self.conn.cursor()
+        t = ( discord_name, )
+        c.execute('SELECT battle_tag FROM players WEHRE battle_tag=?', t)
+
+        return c.fetchone()
+        
