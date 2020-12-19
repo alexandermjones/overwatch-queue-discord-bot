@@ -13,13 +13,13 @@ class Battlenet_Account():
         self.name = name
         self.error = ''
         self.valid_battletag = self.validate_battletag()
-        self.public_check = self.public_check()
+        self.public_check = self.public_lookup()
 
     def validate_battletag(self) -> bool:
         """
         Validates that the battletag is in the correct format
         """
-        # nasty looking regex that matches unicode characters from 2 - 11 in length followed by a hash and a 4 or 5 digit number
+        # nasty looking regex that matches unicode characters from 2 - 11 in length followed by a hash and a 4 or larger digit number
         p= regex.compile(r'(^([A-zÀ-ú][A-zÀ-ú0-9]{2,11})|(^([а-яёА-ЯЁÀ-ú][а-яёА-ЯЁ0-9À-ú]{2,11})))(#[0-9]{4,})$')
         print(f"Checking battle tag {self.name}")
         if p.match(self.name):
@@ -27,7 +27,7 @@ class Battlenet_Account():
         else:
             return False
 
-    async def public_check(self) -> bool:
+    async def public_lookup(self) -> bool:
         """
         Checks the account is publicly availible so that stats can be scraped
         """
