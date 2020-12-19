@@ -26,6 +26,7 @@ bot = commands.Bot(command_prefix='!')
 queue = False
 queue_created = False
 
+
 # Start queue when requested
 @bot.command(name='queue', help='Starts an Overwatch queue.')
 async def start_queue(ctx):
@@ -43,20 +44,20 @@ async def join_queue(ctx):
     global queue
     if not queue:
         queue, response = create_queue(ctx.message.author.name)
-    elif find_player(queue, ctx.message.author.name) in queue.players:
-        response = f"{ctx.message.author.name} is already a member of the queue."
     else:
-        queue.add_player(Player(ctx.message.author.name))
-        response = f"{ctx.message.author.name} has been added to the queue."
+        response = queue.add_player(Player(ctx.message.author.name))
     await ctx.send(response)
-
+    
 
 # Leave queue when requested
 @bot.command(name='leave', help='Leave the Overwatch queue.')
 async def leave_queue(ctx):
     global queue
-    queue.delete_player(find_player(queue, ctx.message.author.name))
-    response = f"{ctx.message.author.name} have been removed from the queue."
+    if not queue:
+        response = "There is no queue. Type \'!queue\' to create one."
+    else:
+        queue.delete_player(find_player(queue, ctx.message.author.name))
+        response = f"{ctx.message.author.name} have been removed from the queue."
     await ctx.send(response)
 
 
@@ -64,7 +65,10 @@ async def leave_queue(ctx):
 @bot.command(name='next', help='Update the queue for the next game.')
 async def next_game_for_queue(ctx):
     global queue
-    response = queue.update_queue()
+    if not queue:
+        response = "There is no queue. Type \'!queue\' to create one."
+    else:
+        response = queue.update_queue()
     await ctx.send(response)
 
 
@@ -90,6 +94,18 @@ async def status_queue(ctx):
         response = queue.print_player_wait(player)
     else:
         response = f"{ctx.message.author.name} is not a member of the queue. Type \'!join\' to join the queue."
+    await ctx.send(response)
+
+
+# End the queue.
+@bot.command(name='end', help='End (remove) the current queue.')
+async def status_queue(ctx):
+    global queue
+    if not queue:
+        response = "There is no queue to end."
+    else:
+        queue = False
+        response = "The queue has been ended. Type \'!queue\' to start a new queue."
     await ctx.send(response)
 
 

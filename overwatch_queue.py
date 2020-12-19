@@ -46,8 +46,8 @@ class Overwatch_Queue():
         """
         # Check that player is not already a player
         if player in self.players:
-            print(f"{player.name} is already a player in the queue.")
-            pass
+            message = (f"{player.name} is already a player in the queue.")
+            return message
         # Add player to current queue
         self.players.append(player)
         if len(self.current_players) < 6:
@@ -56,10 +56,12 @@ class Overwatch_Queue():
         else:
             self.waiting_players.append(player)
             player.playing = False
+        message = f"{player.name} has been added to the queue."
         
         # If twelve players, recommend you have a six v. six
         if len(self.players) == 12:
-            print(f"Oh damn! {player.name} is the twelth player - is it time for a 6 vs. 6?")
+            message += (f"\nOh damn! {player.name} is the twelth player - is it time for a 6 vs. 6?")
+        return message
 
 
     def delete_player(self, player: Player):
@@ -129,10 +131,10 @@ class Overwatch_Queue():
         Return a message of the position of the player and how many games they have to go.
         """
         if player in self.current_players:
-            games_left = int(ceil(self.current_players.index(player)/2)) -1
+            games_left = int(floor(self.current_players.index(player)/2)) -1
             message = f"{player.name} is currently playing/queuing for a game. They have {games_left} games left after this one."
         elif player in self.waiting_players:
-            games_left = int(ceil(self.waiting_players.index(player)/2)) -1
+            games_left = int(floor(self.waiting_players.index(player)/2)) -1
             message = f"{player.name} has to wait for {games_left} games after this one."
         else:
             message = f"{player.name} is not currently in the queue."
@@ -159,24 +161,3 @@ def find_player(queue: Overwatch_Queue, player_name: str):
         if player.name == player_name:
             return player
     return ""
-
-
-if __name__ == "__main__":
-    alex = Player("Alex")
-    rhys = Player("Rhys")
-    steve = Player("Steve")
-    player_list = [alex, rhys, steve]
-    queue = Overwatch_Queue(player_list)
-    queue.print_players()
-    queue.add_player(Player("Megan"))
-    queue.add_player(Player("Nina"))
-    queue.add_player(Player("Jack"))
-    queue.add_player(Player("Izzy"))
-    queue.print_players()
-    queue.update_queue()
-    queue.update_queue()
-
-
-# TODO Discord integration
-# Test script
-# Unit tests/error checking
