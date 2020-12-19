@@ -5,7 +5,7 @@ Class of Overwatch players and a class for a Queue of players.
 # Standard library imports
 from collections import deque
 from math import ceil
-
+import datetime
 
 
 class Player():
@@ -29,6 +29,7 @@ class Overwatch_Queue():
 
     def __init__(self, players=[]):
         self.players = players
+        self.start_time = datetime.datetime.now()
         self.current_players = deque(players[:6])
         if len(players) > 6:
             self.waiting_players = deque(players[6:])

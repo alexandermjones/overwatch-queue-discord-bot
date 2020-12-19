@@ -7,7 +7,9 @@ import os
 import emoji
 
 # Local import
-from overwatch_order import create_queue, find_player, Player, Overwatch_Queue
+from overwatch_queue import create_queue, find_player, Player, Overwatch_Queue
+from battlenet_interface import Battlenet_Account
+from storage_layer import Storage
 
 # Third party imports
 from dotenv import load_dotenv
@@ -26,6 +28,26 @@ bot = commands.Bot(command_prefix='!')
 queue = False
 queue_created = False
 
+db = Storage()
+
+# Associate a discord username with a battlenet tag
+@bot.command(name='link', help='Link a discord name to a battle net account')
+async def store_link(ctx, name: str):
+    """Stores the battle net name against the discord user name.
+    Checks for uniqueness and profile state offers a warning if not unique and profile not public
+    name -- the battlenet name with format DisplayName#0000    
+    """
+    acc = Battlenet_Account(name)
+    pub_chk = await acc.public_check
+    response = ''
+    if(acc.valid_battletag and pub_chk ):
+        response += f"{ctx.message.author.name} is now linked to {name}"
+    else:
+        response += f"Something went wrong with error: {acc.error}"
+    db.upsert_player(ctx.message.author.name, name)
+
+    await ctx.send(response)
+    
 
 # Start queue when requested
 @bot.command(name='queue', help='Starts an Overwatch queue.')
