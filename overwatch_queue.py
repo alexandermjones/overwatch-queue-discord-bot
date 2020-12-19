@@ -56,6 +56,7 @@ class Overwatch_Queue():
         else:
             self.waiting_players.append(player)
             player.playing = False
+
         message = f"{player.name} has been added to the queue."
         
         # If twelve players, recommend you have a six v. six

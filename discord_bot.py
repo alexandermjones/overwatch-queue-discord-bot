@@ -7,7 +7,7 @@ import os
 import emoji
 
 # Local import
-from overwatch_order import create_queue, find_player, Player, Overwatch_Queue
+from overwatch_queue import create_queue, find_player, Player, Overwatch_Queue
 
 # Third party imports
 from dotenv import load_dotenv
@@ -44,6 +44,8 @@ async def join_queue(ctx):
     global queue
     if not queue:
         queue, response = create_queue(ctx.message.author.name)
+    elif find_player(queue, ctx.message.author.name):
+        response = f"{ctx.message.author.name} is already in the queue."
     else:
         response = queue.add_player(Player(ctx.message.author.name))
     await ctx.send(response)
