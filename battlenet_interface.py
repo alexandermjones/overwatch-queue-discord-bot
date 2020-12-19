@@ -25,21 +25,19 @@ class Battlenet_Account():
         if p.match(self.name):
             return True
         else:
+            self.error += 'Incorrect battle tag format ensure you have include the # and the number following it. ' 
             return False
 
     async def public_lookup(self) -> bool:
         """
         Checks the account is publicly availible so that stats can be scraped
         """
-        if self.valid_battletag:
-            player_data = over_stats.PlayerProfile(self.name)
-            # hacky way of determining if profile is public or not checks for prescence of game mode stats should have qp and comp if private will be empty list
-            public = not (len(player_data.modes()) == 0)
-            if not public:
-                self.error += 'Error finding profile check the battle tag is correct '
-            return public
-        else:
-            self.error += 'Battle tag invalid '
+        player_data = over_stats.PlayerProfile(self.name)
+        # hacky way of determining if profile is public or not checks for prescence of game mode stats should have qp and comp if private will be empty list
+        public = not (len(player_data.modes()) == 0)
+        if not public:
+            self.error += 'Could not find profile, ensure that it public. '
+        return public
     
 
 
