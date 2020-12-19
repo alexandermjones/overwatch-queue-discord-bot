@@ -1,0 +1,17 @@
+Package           Version
+----------------- -------
+aiohttp           3.6.3
+async-timeout     3.0.1
+attrs             20.3.0
+chardet           3.0.4
+discord           1.0.1
+discord.py        1.5.1
+emoji             0.6.0
+idna              2.10
+multidict         4.7.6
+pip               20.3.3
+python-dotenv     0.15.0
+setuptools        51.0.0
+typing-extensions 3.7.4.3
+wheel             0.35.1
+yarl              1.5.1
