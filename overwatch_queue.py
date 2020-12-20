@@ -7,7 +7,7 @@ Below these classes are common funtions for interacting with these classes.
 # Standard library imports
 from collections import deque
 from math import ceil
-
+import datetime
 
 
 class Player():
@@ -52,6 +52,7 @@ class Overwatch_Queue():
             players (list): The list of players (Player objects) to start the queue.
         """
         self.players = players
+        self.start_time = datetime.datetime.now()
         # Create a deque of the first six players.
         self.current_players = deque(players[:6])
         # Create a deque of all other players.

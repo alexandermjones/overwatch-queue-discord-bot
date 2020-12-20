@@ -7,6 +7,8 @@ import os
 
 # Local import
 from overwatch_queue import create_queue, find_player, Player, Overwatch_Queue
+from battlenet_interface import Battlenet_Account
+from storage_layer import Storage
 
 # Third party imports
 import discord
@@ -27,6 +29,26 @@ bot = commands.Bot(command_prefix='!')
 queue = False
 queue_created = False
 
+db = Storage()
+
+# Associate a discord username with a battlenet tag
+@bot.command(name='link', help='Link a discord name to a battle net account')
+async def store_link(ctx, name: str):
+    """Stores the battle net name against the discord user name.
+    Checks for uniqueness and profile state offers a warning if not unique and profile not public
+    name -- the battlenet name with format DisplayName#0000    
+    """
+    acc = Battlenet_Account(name)
+    pub_chk = await acc.public_check
+    response = ''
+    if(acc.valid_battletag and pub_chk ):
+        await db.upsert_player(ctx.message.author.name, name)
+        response += f"{ctx.message.author.name} is now linked to {name}"
+    else:
+        response += f"Something went wrong with error/s:\n {acc.error}"
+
+    await ctx.send(response)
+    
 
 """
 The commands that can be given to the bot.
@@ -93,7 +115,7 @@ async def status_queue(ctx):
 
 # See the wait of a player.
 @bot.command(name='wait', help='See how long until your next game.')
-async def status_queue(ctx):
+async def wait_queue(ctx):
     global queue
     player = find_player(queue, ctx.message.author.name)
     if not queue:
@@ -107,7 +129,7 @@ async def status_queue(ctx):
 
 # End the queue.
 @bot.command(name='end', help='End (remove) the current queue.')
-async def status_queue(ctx):
+async def end_queue(ctx):
     global queue
     if not queue:
         response = "There is no queue to end."
