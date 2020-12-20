@@ -55,6 +55,7 @@ class Storage():
         Inserts or updates a player based on the idea the battle tag will not change but the discord name might
         """
         t = [(discord_name), (battle_tag)]
+<<<<<<< HEAD
         try:
             self.conn.cursor().execute('INSERT INTO players(discord_name ,battle_tag) VALUES(?,?) ON CONFLICT(battle_tag) DO UPDATE SET discord_name=excluded.battle_tag;', t)
             self.conn.commit()
@@ -62,6 +63,10 @@ class Storage():
         except:
             print(f"Error linking the account details {discord_name}, {battle_tag}")
 
+=======
+        self.conn.cursor().execute('INSERT INTO players(discord_name ,battle_tag) VALUES(?,?) ON CONFLICT(battle_tag) DO UPDATE SET discord_name=excluded.battle_tag;', t)
+        self.conn.commit()
+>>>>>>> fixed bug in the storage layer that inserted battle tag as both fields
     
     async def get_battltag(self, discord_name: str):
         """
