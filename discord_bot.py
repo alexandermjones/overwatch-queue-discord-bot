@@ -4,7 +4,6 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 
 # Standard library imports
 import os
-import emoji
 
 # Local import
 from overwatch_queue import create_queue, find_player, Player, Overwatch_Queue
@@ -12,13 +11,15 @@ from battlenet_interface import Battlenet_Account
 from storage_layer import Storage
 
 # Third party imports
-from dotenv import load_dotenv
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
+import emoji
 
 # Load in Discord token
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+# Load in Guild name - use emojize in case of emoji in the name.
 GUILD = os.getenv(emoji.emojize('DISCORD_GUILD'))
 
 # Create bot
@@ -49,7 +50,12 @@ async def store_link(ctx, name: str):
     await ctx.send(response)
     
 
-# Start queue when requested
+"""
+The commands that can be given to the bot.
+"""
+
+
+# Start queue when requested.
 @bot.command(name='queue', help='Starts an Overwatch queue.')
 async def start_queue(ctx):
     global queue
@@ -60,18 +66,20 @@ async def start_queue(ctx):
     await ctx.send(response)
 
 
-# Join queue when requested
+# Join queue when requested.
 @bot.command(name='join', help='Join the Overwatch queue.')
 async def join_queue(ctx):
     global queue
     if not queue:
         queue, response = create_queue(ctx.message.author.name)
+    elif find_player(queue, ctx.message.author.name):
+        response = f"{ctx.message.author.name} is already in the queue."
     else:
         response = queue.add_player(Player(ctx.message.author.name))
     await ctx.send(response)
     
 
-# Leave queue when requested
+# Leave queue when requested.
 @bot.command(name='leave', help='Leave the Overwatch queue.')
 async def leave_queue(ctx):
     global queue
@@ -83,7 +91,7 @@ async def leave_queue(ctx):
     await ctx.send(response)
 
 
-# Switch to the next game
+# Switch to the next game.
 @bot.command(name='next', help='Update the queue for the next game.')
 async def next_game_for_queue(ctx):
     global queue
@@ -94,7 +102,7 @@ async def next_game_for_queue(ctx):
     await ctx.send(response)
 
 
-# See the status of the queue
+# See the status of the queue.
 @bot.command(name='status', help='See the status of the queue.')
 async def status_queue(ctx):
     global queue
@@ -105,7 +113,7 @@ async def status_queue(ctx):
     await ctx.send(response)
 
 
-# See the wait of a player
+# See the wait of a player.
 @bot.command(name='wait', help='See how long until your next game.')
 async def wait_queue(ctx):
     global queue
@@ -130,6 +138,6 @@ async def end_queue(ctx):
         response = "The queue has been ended. Type \'!queue\' to start a new queue."
     await ctx.send(response)
 
-
+# Run the bot.
 bot.run(TOKEN)
 
