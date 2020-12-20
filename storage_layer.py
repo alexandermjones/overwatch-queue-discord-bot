@@ -44,7 +44,7 @@ class Storage():
         """
         Inserts or updates a player based on the idea the battle tag will not change but the discord name might
         """
-        t = (discord_name, battle_tag)
+        t = [(discord_name), (battle_tag)]
         self.conn.cursor().execute('INSERT INTO players(discord_name ,battle_tag) VALUES(?,?) ON CONFLICT(battle_tag) DO UPDATE SET discord_name=excluded.battle_tag;', t)
         self.conn.commit()
     
