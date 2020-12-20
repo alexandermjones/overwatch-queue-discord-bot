@@ -44,7 +44,7 @@ async def store_link(ctx, name: str):
         await db.upsert_player(ctx.message.author.name, name)
         response += f"{ctx.message.author.name} is now linked to {name}"
     else:
-        response += f"Something went wrong with error: {acc.error}"
+        response += f"Something went wrong with error/s:\n {acc.error}"
 
     await ctx.send(response)
     
@@ -107,7 +107,7 @@ async def status_queue(ctx):
 
 # See the wait of a player
 @bot.command(name='wait', help='See how long until your next game.')
-async def status_queue(ctx):
+async def wait_queue(ctx):
     global queue
     player = find_player(queue, ctx.message.author.name)
     if not queue:
@@ -121,7 +121,7 @@ async def status_queue(ctx):
 
 # End the queue.
 @bot.command(name='end', help='End (remove) the current queue.')
-async def status_queue(ctx):
+async def end_queue(ctx):
     global queue
     if not queue:
         response = "There is no queue to end."
