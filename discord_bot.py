@@ -4,6 +4,7 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 
 # Standard library imports.
 import os
+import sys
 
 # Local import
 from overwatch_queue import create_queue, find_player, Player, Overwatch_Queue
@@ -135,11 +136,12 @@ async def end_queue(ctx):
     if not queue:
         response = "There is no queue to end."
     else:
+        del(queue)
         queue = False
         response = "The queue has been ended. Type \'!queue\' to start a new queue."
     await ctx.send(response)
 
-# Run the bot.
+
 while not input():
     bot.run(TOKEN)
-
+sys.exit()
