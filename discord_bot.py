@@ -142,6 +142,4 @@ async def end_queue(ctx):
     await ctx.send(response)
 
 
-while not input():
-    bot.run(TOKEN)
-sys.exit()
+bot.run(TOKEN)
