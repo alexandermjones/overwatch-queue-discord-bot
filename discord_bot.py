@@ -2,19 +2,20 @@
 Discord bot to implement the Overwatch Queue from overwatch_order.py.
 """
 
-# Standard library imports
+# Standard library imports.
 import os
 
-# Local import
-from overwatch_queue import create_queue, find_player, Player, Overwatch_Queue
+# Local imports.
+from overwatch_queue import Player, Overwatch_Queue, create_queue, find_player
 
-# Third party imports
+# Third party imports.
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import emoji
 
-# Load in Discord token
+
+# Load in Discord token.
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 # Load in Guild name - use emojize in case of emoji in the name.
@@ -117,5 +118,6 @@ async def status_queue(ctx):
     await ctx.send(response)
 
 # Run the bot.
-bot.run(TOKEN)
+while not input():
+    bot.run(TOKEN)
 

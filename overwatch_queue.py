@@ -6,7 +6,7 @@ Below these classes are common funtions for interacting with these classes.
 
 # Standard library imports
 from collections import deque
-from math import ceil
+from math import floor
 
 
 
@@ -66,7 +66,7 @@ class Overwatch_Queue():
             player.playing = False
     
 
-    def add_player(self, player: Player):
+    def add_player(self, player: Player) -> str:
         """
         Adds a player to the queue.
 
@@ -125,7 +125,7 @@ class Overwatch_Queue():
             self.waiting_players.remove(player)
     
 
-    def print_players(self):
+    def print_players(self) -> str:
         """
         Returns a message showing the currently playing players and the waiting players.
 
@@ -144,7 +144,7 @@ class Overwatch_Queue():
         return message
 
 
-    def update_queue(self):
+    def update_queue(self) -> str:
         """
         Changes the current players in the queue for the next game.
 
@@ -198,15 +198,16 @@ class Overwatch_Queue():
         """
         # If player in a game, return how many games they have left to play.
         if player in self.current_players:
-            games_left = int(floor(self.current_players.index(player)/2)) -1
+            games_left = int(floor(self.current_players.index(player)/2))
             message = f"{player.name} is currently playing/queuing for a game. They have {games_left} games left after this one."
         # If player waiting for a game, return how many games they have to wait for.
         elif player in self.waiting_players:
-            games_left = int(floor(self.waiting_players.index(player)/2)) -1
+            games_left = int(floor(self.waiting_players.index(player)/2))
             message = f"{player.name} has to wait for {games_left} games after this one."
         else:
             message = f"{player.name} is not currently in the queue."
         return message
+
 
 
 """
