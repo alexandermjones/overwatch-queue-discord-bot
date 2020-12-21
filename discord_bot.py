@@ -32,6 +32,18 @@ queue_created = False
 
 db = Storage()
 
+
+
+class Overwatch_Bot(commands.Bot):
+    """
+    """
+
+    def __init__(self):
+        """
+        Initialises the Overwatch_Bot
+        """
+        super().__init__()
+
 # Associate a discord username with a battlenet tag
 @bot.command(name='link', help='Link a discord name to a battle net account')
 async def store_link(ctx, name: str):
