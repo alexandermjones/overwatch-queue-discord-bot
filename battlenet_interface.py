@@ -1,6 +1,24 @@
 import regex
 import over_stats
 
+class Game_Stats():
+    """
+    Data holding class for 
+    """
+    def __init__(self, battletag: str):
+        """
+        Initialise an Battlenet Account.
+        """
+        self.battletag = battletag
+        self.cp_wins = 0
+        self.cp_loss = 0
+        self.cp_total = 0
+        self.cp_draw =0  
+        self.qp_wins = 0
+        self.qp_loss = 0
+        self.qp_total = 0
+        self.qp_draw =0  
+
 class Battlenet_Account():
     """
     A Batllenet Account.
@@ -40,5 +58,5 @@ class Battlenet_Account():
                 self.error += 'Could not find profile, ensure that it public.\n'
         return public
     
-
-
+    # async def get_game_stats(self) -> Game_Stats:
+         
