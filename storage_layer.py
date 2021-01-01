@@ -41,9 +41,14 @@ class Storage():
                                 id integer PRIMARY KEY,
                                 Win int DEFAULT 0,
                                 Loss int DEFAULT 0,
+<<<<<<< HEAD
                                 Draw int DEFAULT 0
+=======
+                                Draw int DEFAULT 0, 
+>>>>>>> 6d130123cf3e756b75655e994c7d84289f572dcd
                                 ); """
                 conn.cursor().execute(sql_create_players_table)
+                conn.cursor().execute(sql_create_session_table)
                 conn.commit()
                 conn.cursor().execute(sql_create_session_table)
                 conn.commit()
