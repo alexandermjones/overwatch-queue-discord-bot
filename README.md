@@ -34,6 +34,16 @@ server to see available commands.
 ```
 python3 discord_bot.py
 ```
+If you use [just](https://github.com/casey/just) then you can just run.
+
+```
+just run
+```
+
+or, for development
+```
+just watch
+```
 
 ## Contributing
 Contributions are welcome, but please get in touch with me first
