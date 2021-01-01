@@ -8,7 +8,7 @@ Below these classes are common funtions for interacting with these classes.
 import datetime
 from collections import deque
 from math import floor
-
+from typing import List
 
 
 class Player():
@@ -145,6 +145,8 @@ class Overwatch_Queue():
                 message += ("\n\t" + player.name)
         return message
 
+    def get_current_players(self) -> List[str]:
+        return list(self.current_players)
 
     def update_queue(self) -> str:
         """

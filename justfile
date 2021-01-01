@@ -1,4 +1,4 @@
 watch:
     watchmedo auto-restart -p "*.py" -R python3 -- discord_bot.py
 env:
-    source ./.venv/bin/activate
+    @echo source {{justfile_directory()}}/.venv/bin/activate
