@@ -136,6 +136,9 @@ async def end_queue(ctx):
     if not queue:
         response = "There is no queue to end."
     else:
+        del(queue.current_players)
+        del(queue.waiting_players)
+        del(queue.players)
         del(queue)
         queue = False
         response = "The queue has been ended. Type \'!queue\' to start a new queue."
