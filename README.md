@@ -22,9 +22,9 @@ DISCORD_TOKEN=your-discord-token
 DISCORD_GUILD=your-server-name
 ```
 The details for getting these tokens and setting up a Discord bot are [here](https://realpython.com/how-to-make-a-discord-bot-python/).
-Once done, just install the necessary dependencies:
+Once done, just install the necessary dependencies the project uses [poetry](https://github.com/python-poetry/poetry) for dependancy management:
 ```
-pip3 install -r requirements.txt
+poetry install
 ```
 
 ## Usage
