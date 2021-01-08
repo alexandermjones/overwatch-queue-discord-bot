@@ -2,8 +2,9 @@
 name = "overwatch-queue-discord-bot"
 version = "0.1.0"
 description = "Creates a queue of overwatch players if there are more than 6 players"
-authors = ["Alexander M Jones", "JMayo"]
+authors = ["Alexander M Jones"]
 license = "MIT"
+repository = "https://github.com/alexandermjones/overwatch-queue-discord-bot"
 
 [tool.poetry.dependencies]
 python = "*"
