@@ -126,6 +126,6 @@ class Storage():
             c.executemany('INSERT INTO sessionPlayers VALUES((SELECT id FROM players WHERE discord_name=?),?);',records)
             self.conn.commit()
         except:
-            logging.info(f"Something went wrong inserting {records}")
+            logging.error(f"Something went wrong inserting {records}")
             raise Exception("Storage error")
         
