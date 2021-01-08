@@ -4,7 +4,7 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 
 # Standard library imports.
 import os
-import sys
+import sys, getopt
 
 # Local import
 from overwatch_queue import create_queue, find_player, Player, Overwatch_Queue
@@ -16,7 +16,7 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 import emoji
-
+import logging
 
 # Load in Discord token.
 load_dotenv()
@@ -30,6 +30,28 @@ bot = commands.Bot(command_prefix='!')
 # Create global variables
 queue = False
 queue_created = False
+
+#Cmd line options for when it is dockerized
+short_options = "l:t:"
+long_options = ["log=", "token="]
+
+full_cmd_arguments = sys.argv
+
+# Keep all but the first
+argument_list = full_cmd_arguments[1:]
+
+args, vals = getopt.getopt(argument_list, short_options, long_options)
+
+for current_argument, current_value in args:
+    if current_argument in ("-l", "--log"):
+        loglevel= current_value
+    if current_argument in ("-t", "--token"):
+        TOKEN = current_value
+
+numeric_level = getattr(logging, loglevel.upper(), None)
+if not isinstance(numeric_level, int):
+    raise ValueError('Invalid log level: %s' % loglevel)
+logging.basicConfig(level=numeric_level)
 
 db = Storage()
 
@@ -55,7 +77,6 @@ async def store_link(ctx, name: str):
 """
 The commands that can be given to the bot.
 """
-
 
 # Start queue when requested.
 @bot.command(name='queue', help='Starts an Overwatch queue.')

@@ -1,5 +1,8 @@
 import regex
 import over_stats
+import datetime
+import json
+from contextlib import suppress
 
 class Game_Stats():
     """
@@ -10,6 +13,7 @@ class Game_Stats():
         Initialise an Battlenet Account.
         """
         self.battletag = battletag
+        self.timestamp = datetime.now
         self.cp_wins = 0
         self.cp_loss = 0
         self.cp_total = 0
@@ -17,7 +21,6 @@ class Game_Stats():
         self.qp_wins = 0
         self.qp_loss = 0
         self.qp_total = 0
-        self.qp_draw =0  
 
 class Battlenet_Account():
     """
@@ -32,6 +35,7 @@ class Battlenet_Account():
         self.error = ''
         self.valid_battletag = self.validate_battletag()
         self.public_check = self.public_lookup()
+        self.player_data = (over_stats.PlayerProfile(self.name) if self.valid_battletag & self.public_check else None  )
 
     def validate_battletag(self) -> bool:
         """
@@ -58,5 +62,27 @@ class Battlenet_Account():
                 self.error += 'Could not find profile, ensure that it public.\n'
         return public
     
-    # async def get_game_stats(self) -> Game_Stats:
-         
+    async def get_game_stats(self) -> Game_Stats:
+        """
+        Returns the win loss draw values for the instantiated battlenet account
+        """
+        gs = Game_Stats(self.name)
+        #games played can be game played if singular
+
+        qp_total_raw = [(key, value) for key, value in self.player_data.stats('quickplay', "ALL HEROES", "Game").items() if "Played" in key and "Game" in key] 
+        cp_total_raw = [(key, value) for key, value in self.player_data.stats('competitive', "ALL HEROES", "Game").items() if "Played" in key and "Game" in key]
+        qp_win_raw = [(key, value) for key, value in self.player_data.stats('quickplay', "ALL HEROES", "Game").items() if "Won" in key ] 
+        qp_loss_raw = [(key, value) for key, value in self.player_data.stats('quickplay', "ALL HEROES", "Game").items() if "Lost" in key ] 
+        cp_win_raw = [(key, value) for key, value in self.player_data.stats('competitive', "ALL HEROES", "Game").items() if "Won" in key ] 
+        cp_loss_raw = [(key, value) for key, value in self.player_data.stats('competitive', "ALL HEROES", "Game").items() if "Lost" in key ] 
+        cp_draw_raw = [(key, value) for key, value in self.player_data.stats('competitive', "ALL HEROES", "Game").items() if "Drew" in key ]
+
+        gs.cp_total = cp_total_raw[0][1] if len(qp_total_raw) > 0 else 0
+        gs.qp_total = qp_total_raw[0][1] if len(qp_total_raw) > 0 else 0
+        gs.qp_wins = qp_win_raw[0][1] if len(qp_total_raw) > 0 else 0
+        gs.qp_loss = qp_loss_raw[0][1] if len(qp_total_raw) > 0 else 0
+        gs.cp_wins = cp_win_raw[0][1] if len(qp_total_raw) > 0 else 0
+        gs.cp_loss = cp_loss_raw[0][1] if len(qp_total_raw) > 0 else 0
+        gs.cp_draw = cp_draw_raw[0][1] if len(qp_total_raw) > 0 else 0
+
+        return gs

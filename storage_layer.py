@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 from typing import Set, Tuple
-
+import logging
 from overwatch_queue import Overwatch_Queue
 
 """
@@ -27,8 +27,9 @@ class Storage():
         """ create a database connection to a SQLite database """
         conn = None
         try:
+            logging.info("Connecting to db")
             conn = sqlite3.connect(r"./db/overwatch_stats.db")
-            print(sqlite3.version)
+            logging.info(f"db connection successful sqlite version: {sqlite3.version}")
         except Error as e:
             print(e)
         finally:
@@ -68,9 +69,9 @@ class Storage():
         try:
             self.conn.cursor().execute('INSERT INTO players(discord_name ,battle_tag) VALUES(?,?) ON CONFLICT(battle_tag) DO UPDATE SET discord_name=excluded.battle_tag;', t)
             self.conn.commit()
-            print(f"Link successful: {discord_name} linked to {battle_tag}")
+            logging.info(f"Link successful: {discord_name} linked to {battle_tag}")
         except:
-            print(f"Error linking the account details {discord_name}, {battle_tag}")
+            logging.error(f"Error linking the account details {discord_name}, {battle_tag}")
 
     
     async def get_battltag(self, discord_name: str) -> Tuple[str, str]:
@@ -94,13 +95,13 @@ class Storage():
             c.execute('INSERT INTO session(win, loss, draw) VALUES(0,0,0);')
             self.conn.commit()
             sessionId = c.lastrowid
-            print(f"Empty session created with id : {sessionId}")
+            logging.info(f"Empty session created with id : {sessionId}")
         except:
-            print(f"Error creating session")
+            logging.error(f"Error creating session")
         try:
             await self.associate_players_with_session(queue= queue, sessionId = sessionId)
         except:
-            print(f"Error associating the players with session: {queue}")
+            logging.error(f"Error associating the players with session: {queue}")
         return sessionId
 
     async def update_session_stats(self, sessionId: int, wins: int, losses: int, draws: int) -> None:
@@ -113,7 +114,7 @@ class Storage():
             c.execute('UPDATE session SET win = ? ,loss = ?, draw = ? WHERE id = ?;', t) 
             self.conn.commit()
         except:
-            print(f"Something went wrong updateing the session with: {t}")
+            logging.error(f"Something went wrong updating the session with values: {t}")
     
     async def associate_players_with_session(self, queue: Overwatch_Queue, sessionId: int) -> None:
         """
@@ -125,6 +126,6 @@ class Storage():
             c.executemany('INSERT INTO sessionPlayers VALUES((SELECT id FROM players WHERE discord_name=?),?);',records)
             self.conn.commit()
         except:
-            print(f"Something went wrong inserting {records}")
+            logging.info(f"Something went wrong inserting {records}")
             raise Exception("Storage error")
         
