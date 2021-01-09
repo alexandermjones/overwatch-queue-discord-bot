@@ -1,11 +1,10 @@
 from dotenv import load_dotenv
+from discord_bot import create_bot
 
 # Load in Discord token.
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-bot = commands.Bot(command_prefix='!')
-
-# Run the bot.
-while not input():
-    bot.run(TOKEN)
+# Create bot and run.
+bot = create_bot()
+bot.run(TOKEN)
