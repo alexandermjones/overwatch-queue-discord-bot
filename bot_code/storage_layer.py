@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from sqlite3 import Error
 
@@ -23,6 +24,8 @@ class Storage():
     def create_connection(self):
         """ create a database connection to a SQLite database """
         conn = None
+        if not os.path.exists("./db"):
+            os.mkdir("./db")
         try:
             conn = sqlite3.connect(r"./db/overwatch_stats.db")
             print(sqlite3.version)
@@ -50,7 +53,7 @@ class Storage():
     
     async def get_battltag(self, discord_name: str):
         """
-        Gets te battletag assigned ot the discord user
+        Gets the battletag assigned to the discord user
         """
         c= self.conn.cursor()
         t = ( discord_name, )

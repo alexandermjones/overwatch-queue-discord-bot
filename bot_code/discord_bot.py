@@ -24,18 +24,23 @@ class Overwatch_Bot(commands.Bot):
     :param commands.Bot Discord class for an Overwatch bot
     """
 
-    def __init__(self):
+    def __init__(self, command_prefix: str):
         """
         Initialises the Overwatch_Bot
+
+        :param command_preix (str) The character that identifies a message as a command to the bot.
         """
-        super().__init__()
+        super().__init__(command_prefix=command_prefix)
         self.queue = Overwatch_Queue()
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
 
 
-def create_bot():
+def create_bot() -> Overwatch_Bot:
     """
     Create the Overwatch queue bot and give it all the commands.
+
+    Returns:
+        bot (Overwatch_Bot): A bot initialised with all the commands we need.
     """
     bot = Overwatch_Bot(command_prefix='!')
 
@@ -86,7 +91,7 @@ def create_bot():
     # Leave queue when requested.
     @bot.command(name='leave', help='Leave the Overwatch queue.')
     async def leave_queue(ctx):
-        if not bot.queue:
+        if not bot.queue.players:
             response = bot.no_queue_response
         else:
             player = find_player(bot.queue, ctx.message.author.name)
@@ -133,13 +138,13 @@ def create_bot():
 
     # Kick a player from the queue.
     @bot.command(name='kick', help='Remove a player from the queue.')
-    async def kick_player(ctx, arg):
+    async def kick_player(ctx, name: str):
         if not arg:
             response = "Type \'!kick\' followed by the Discord name of the player to remove."
         elif not bot.queue:
             response = bot.no_queue_response
         else:
-            player = find_player(bot.queue, arg)
+            player = find_player(bot.queue, name)
             if player:
                 bot.queue.delete_player(player)
                 response = f"{ctx.message.author.name} has been removed from the queue."
@@ -149,14 +154,34 @@ def create_bot():
 
     
     # Delay your position in the queue when requested.
-    @bot.command(name='delay', help='Temporarily jump to the bottom of the queue until rejoined.')
+    @bot.command(name='delay', help='Temporarily no longer join current players until rejoined.')
     async def delay_player(ctx):
         if not bot.queue:
             response = bot.no_queue_response
         else:
             player = find_player(bot.queue, ctx.message.author.name)
             if player:
-                response = bot.queue.delay_player(player)
+                message = bot.queue.delay_player(player)
+                response = f"{ctx.message.author.name} is now delaying their games. Type \'!rejoin\' to stop."
+                response += ("\n\n" + message)
+            else:
+                response = f"{ctx.message.author.name} is not a player in the queue."
+        await ctx.send(response)
+
+    
+    # Rejoin your position in the queue after delaying.
+    @bot.command(name='rejoin', help='Stop delaying games and be able to join current players again.')
+    async def rejoin_player(ctx):
+        if not bot.queue:
+            response = bot.no_queue_response
+        else:
+            player = find_player(bot.queue, ctx.message.author.name)
+            if player and player.delaying:
+                message = bot.queue.delay_player(player)
+                response = f"{ctx.message.author.name} is no longer delaying their games."
+                response += ("\n\n" + message)
+            elif player and not player.delaying:
+                response = f"{ctx.message.author.name} was not delaying games."
             else:
                 response = f"{ctx.message.author.name} is not a player in the queue."
         await ctx.send(response)
@@ -173,4 +198,5 @@ def create_bot():
         await ctx.send(response)
 
 
+    print("Bot created")
     return bot

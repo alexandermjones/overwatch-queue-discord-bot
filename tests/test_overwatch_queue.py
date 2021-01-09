@@ -4,7 +4,7 @@ Unit tests for overwatch_queue.py
 from collections import deque
 import pytest
 
-from overwatch_queue import *
+from bot_code.overwatch_queue import *
 
 
 def test_add_player_five_person_queue(five_player_queue):
