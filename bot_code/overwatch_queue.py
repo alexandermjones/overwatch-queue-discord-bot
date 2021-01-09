@@ -161,6 +161,7 @@ class Overwatch_Queue():
         player.delaying = False
         if len(self.current_players) <= 5:
             self.current_players.append(player)
+            self.waiting_players.remove(player)
             player.playing = True
         message = self.print_players()
         return message
