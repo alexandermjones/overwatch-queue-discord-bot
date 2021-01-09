@@ -29,6 +29,7 @@ class Player():
         """
         self.name = name
         self.playing = False
+        self.delaying = False
 
 
 
@@ -53,6 +54,7 @@ class Overwatch_Queue():
             players (list): The list of players (Player objects) to start the queue.
         """
         self.players = players
+        self.delayed_players = []
         self.start_time = datetime.datetime.now()
         # Create a deque of the first six players.
         self.current_players = deque(players[:6])
@@ -118,13 +120,51 @@ class Overwatch_Queue():
         self.players.remove(player)
         if player in self.current_players:
             self.current_players.remove(player)
-            # If we have a player waiting, then add them to the current_players list.
-            if self.waiting_players:
-                new_player = self.waiting_players.popleft()
-                self.current_players.append(new_player)
-                new_player.playing = True
+            # If we have a player waiting who is not delaying, then add them to the current_players list.
+            if len(list(filter(lambda x: not x.delaying, self.waiting_players))):
+                self.__rotate_queue_once()
         elif player in self.waiting_players:
             self.waiting_players.remove(player)
+
+    
+    def delay_player(self, player: Player):
+        """
+        Moves a player from the current or waiting players to delayed_players.
+
+        The player is removed from the current_players or waiting_players deque.
+        The player is then added to the delayed_players list.
+        Finally, if a player is in the waiting_players deque, then they are added to current_players.
+
+        Args:
+            player (Player): A Player object in self.players
+        """
+        player.playing = False
+        player.delaying = True
+        self.delayed_players.append(player)
+        if player in self.current_players:
+            self.current_players.remove(player)
+            # If we have a player waiting who is not delaying, then add them to the current_players list.
+            if len(list(filter(lambda x: not x.delaying, self.waiting_players))):
+                self.__rotate_queue_once()
+            self.waiting_players.appendleft(player)
+        message = self.print_players()
+        return message
+
+    
+    def rejoin_player(self, player: Player):
+        """
+        Sets the player to no longer be delaying and adds them to current_players if space.
+
+        Args:
+            player (Player): A Player object in self.players
+        """
+        player.delaying = False
+        if len(self.current_players) <= 5:
+            self.current_players.append(player)
+            self.waiting_players.remove(player)
+            player.playing = True
+        message = self.print_players()
+        return message
     
 
     def print_players(self) -> str:
@@ -143,6 +183,8 @@ class Overwatch_Queue():
             message += "\n\nThe players in the waiting queue are: "
             for player in self.waiting_players:
                 message += ("\n\t" + player.name)
+                if player.delaying:
+                    message += " (Currently delaying)"
         return message
 
 
@@ -159,29 +201,21 @@ class Overwatch_Queue():
         Returns:
             message (str): The message from self.print_players()
         """
-        players_removed = []
-        players_waiting = []
-
-        if len(self.players) <= 6:
+        if (len(self.players) - len(self.delayed_players)) <= 6:
+            # No players to swap out
             pass
-        elif len(self.players) == 7:
-            # Only a single player to swap out.
-            players_removed.append(self.current_players.popleft())
-            players_waiting.append(self.waiting_players.popleft())
+        elif (len(self.players) - len(self.delayed_players)) == 7:
+            # Only a single player to swap
+            self.__rotate_queue_once()
+        elif (len(self.players) - len(self.delayed_players)) <= 10: 
+            # Two players to swap
+            self.__rotate_queue_once()
+            self.__rotate_queue_once()
         else:
-            # Two players to swap out.
-            players_removed.append(self.current_players.popleft())
-            players_removed.append(self.current_players.popleft())
-            players_waiting.append(self.waiting_players.popleft())
-            players_waiting.append(self.waiting_players.popleft())
-
-        # Swap the waiting and current players around.
-        for player in players_removed:
-            self.waiting_players.append(player)
-            player.playing = False
-        for player in players_waiting:
-            self.current_players.append(player)
-            player.playing = True
+            # Three players to swap
+            self.__rotate_queue_once()
+            self.__rotate_queue_once()
+            self.__rotate_queue_once()
 
         # Get a message of who the current/waiting players now.
         message = self.print_players()
@@ -210,29 +244,47 @@ class Overwatch_Queue():
             message = f"{player.name} is not currently in the queue."
         return message
 
+    
+    def empty_queue(self):
+        """
+        Empties the queue of all players.
+        """
+        for player in self.players:
+            del(player)
+        self.players = []
+        self.current_players = deque()
+        self.waiting_players = deque()
+
+    
+    def __rotate_queue_once(self):
+        """
+        Private function. Rotates one current player into the waiting queue.
+        Called in update_queue.
+        """
+        players_delaying = []
+
+        # Remove any delayed players into holding position
+        for player in self.delayed_players:
+            if player == self.waiting_players[0]:
+                players_delaying.append(self.waiting_players.popleft())
+
+        # Swap out player
+        old_player = self.current_players.popleft()
+        new_player = self.waiting_players.popleft()
+        self.current_players.append(new_player)
+        self.waiting_players.append(old_player)
+        old_player.playing = False
+        new_player.playing = True        
+
+        # Replace any players holding position
+        for player in players_delaying:
+            self.waiting_players.appendleft(player)
+
 
 
 """
-Functions for interacting with the classes above.
+Function for interacting with the classes above.
 """
-
-
-def create_queue(player_name: str):
-    """
-    Creates an Overwatch_Queue and Player added to the queue with the name given.
-
-    Args:
-        player_name (str): The name of the queue creator, to be added as a Player object to the Queue.
-
-    Returns:
-        queue (Overwatch_Queue) A new queue of Players.
-        respose (str) The message that the queue has been created.
-    """
-    queue = Overwatch_Queue()
-    queue.add_player(Player(player_name))
-    response = "Overwatch queue has been created. Type \'!join\' to be added to the queue."
-    response += f"\n{player_name} has been added to the queue."
-    return queue, response
 
 
 def find_player(queue: Overwatch_Queue, player_name: str):
@@ -246,8 +298,6 @@ def find_player(queue: Overwatch_Queue, player_name: str):
     Returns:
         player (Player): A Player object with the same name as player_name in the queue, empty string if none.
     """
-    if not queue:
-        return ""
     for player in queue.players:
         if player.name == player_name:
             return player

@@ -19,9 +19,8 @@ Create a .env file in your local version of this folder with the structure:
 ```
 # .env
 DISCORD_TOKEN=your-discord-token
-DISCORD_GUILD=your-server-name
 ```
-The details for getting these tokens and setting up a Discord bot are [here](https://realpython.com/how-to-make-a-discord-bot-python/).
+The details for getting this token and setting up a Discord bot are [here](https://realpython.com/how-to-make-a-discord-bot-python/).
 Once done, just install the necessary dependencies:
 ```
 pip3 install -r requirements.txt
@@ -29,10 +28,10 @@ pip3 install -r requirements.txt
 
 ## Usage
 
-Run the python file discord_bot.py and type `!help` in your Discord
+Run the bot_code folder with python and type `!help` in your Discord
 server to see available commands.
 ```
-python3 discord_bot.py
+python3 bot_code
 ```
 
 ## Contributing
