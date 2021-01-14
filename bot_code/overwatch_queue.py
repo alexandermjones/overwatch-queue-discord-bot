@@ -159,6 +159,7 @@ class Overwatch_Queue():
             player (Player): A Player object in self.players
         """
         player.delaying = False
+        self.delayed_players.remove(player)
         if len(self.current_players) <= 5:
             self.current_players.append(player)
             self.waiting_players.remove(player)
