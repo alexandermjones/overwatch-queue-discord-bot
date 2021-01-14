@@ -270,12 +270,14 @@ class Overwatch_Queue():
                 players_delaying.append(self.waiting_players.popleft())
 
         # Swap out player
-        old_player = self.current_players.popleft()
         new_player = self.waiting_players.popleft()
         self.current_players.append(new_player)
-        self.waiting_players.append(old_player)
-        old_player.playing = False
-        new_player.playing = True        
+        new_player.playing = True              
+
+        if len(self.current_players) > 6:
+            old_player = self.current_players.popleft()
+            self.waiting_players.append(old_player)
+            old_player.playing = False
 
         # Replace any players holding position
         for player in players_delaying:
