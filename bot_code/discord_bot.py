@@ -135,6 +135,19 @@ def create_bot() -> Overwatch_Bot:
             response = f"{ctx.message.author.name} is not a member of the queue. Type \'!join\' to join the queue."
         await ctx.send(response)
 
+    
+    # Add a player to the queue.
+    @bot.command(name='add', help='Add a player to the queue.')
+    async def kick_player(ctx, arg=""):
+        message = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
+        if find_player(bot.queue, arg):
+            response = f"{arg} is already in the queue."
+        else:
+            response = message + bot.queue.add_player(Player(arg))
+        if not arg:
+            response = "Type \'!add \' followed by the Discord name of the player to add them."
+        await ctx.send(response)
+
 
     # Kick a player from the queue.
     @bot.command(name='kick', help='Remove a player from the queue.')
@@ -151,11 +164,6 @@ def create_bot() -> Overwatch_Bot:
             else:
                 response = f"{arg} is not a player in the queue."
         await ctx.send(response)
-    """    
-    except commands.errors.MissingRequiredArgument:
-        async def kick_player(ctx):
-            response = "Type \'!kick\' followed by the Discord name of the player to remove."
-            await ctx.send(response)"""
 
     
     # Delay your position in the queue when requested.
