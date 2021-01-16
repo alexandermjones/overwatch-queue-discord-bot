@@ -68,6 +68,12 @@ class Overwatch_Queue():
             player.playing = True
         for player in self.waiting_players:
             player.playing = False
+
+        # Setup backup lists for undo-ing actions
+        self.__backup_players = self.players
+        self.__backup_delayed_players = self.delayed_players
+        self.__backup_current_players = self.current_players
+        self.__backup_waiting_players = self.waiting_players
     
 
     def add_player(self, player: Player) -> str:
@@ -84,6 +90,7 @@ class Overwatch_Queue():
         Returns:
             message (str): A message saying whether the player has been added.
         """
+        self.__backup_queue()
         # Check that player is not already a player.
         if player in self.players:
             message = (f"{player.name} is already a player in the queue.")
@@ -117,6 +124,7 @@ class Overwatch_Queue():
         Args:
             player (Player): A Player object to add to the queue.
         """
+        self.__backup_queue()
         self.players.remove(player)
         if player in self.current_players:
             self.current_players.remove(player)
@@ -138,6 +146,7 @@ class Overwatch_Queue():
         Args:
             player (Player): A Player object in self.players
         """
+        self.__backup_queue()
         player.playing = False
         player.delaying = True
         self.delayed_players.append(player)
@@ -158,6 +167,7 @@ class Overwatch_Queue():
         Args:
             player (Player): A Player object in self.players
         """
+        self.__backup_queue()
         player.delaying = False
         self.delayed_players.remove(player)
         if len(self.current_players) <= 5:
@@ -202,6 +212,7 @@ class Overwatch_Queue():
         Returns:
             message (str): The message from self.print_players()
         """
+        self.__backup_queue()
         if (len(self.players) - len(self.delayed_players)) <= 6:
             # No players to swap out
             pass
@@ -245,16 +256,52 @@ class Overwatch_Queue():
             message = f"{player.name} is not currently in the queue."
         return message
 
-    
+
+    def find_player(self, player_name: str):
+        """
+        Returns a Player object from the queue, given a player name as a string.
+
+        Args:
+            player_name (str): The name of a player in the Overwatch_Queue.
+
+        Returns:
+            player (Player): A Player object with the same name as player_name in the queue, empty string if none.
+        """
+        for player in self.players:
+            if player.name == player_name:
+                return player
+        return ""
+
+  
     def empty_queue(self):
         """
         Empties the queue of all players.
         """
+        self.__backup_queue()
         for player in self.players:
             del(player)
         self.players = []
         self.current_players = deque()
         self.waiting_players = deque()
+
+
+    def undo_command(self):
+        """
+        Undoes the previous command.
+        Replaces all current class properties x with the __backup_x property instead.
+
+        Returns:
+            message (str): The message from self.print_players()
+        """
+        # Undo previous operation
+        self.players = self.__backup_players
+        self.delayed_players = self.__backup_delayed_players
+        self.current_players = self.__backup_current_players
+        self.waiting_players = self.__backup_waiting_players
+
+        # Return current state of queue
+        message = self.print_players()
+        return message
 
     
     def __rotate_queue_once(self):
@@ -283,25 +330,13 @@ class Overwatch_Queue():
         for player in players_delaying:
             self.waiting_players.appendleft(player)
 
-
-
-"""
-Function for interacting with the classes above.
-"""
-
-
-def find_player(queue: Overwatch_Queue, player_name: str):
-    """
-    Returns a Player object from the queue, given a player name as a string.
-
-    Args:
-        queue (Overwatch_Queue): An Overwatch_Queue of Players.
-        player_name (str): The name of a player in the Overwatch_Queue.
     
-    Returns:
-        player (Player): A Player object with the same name as player_name in the queue, empty string if none.
-    """
-    for player in queue.players:
-        if player.name == player_name:
-            return player
-    return ""
+    def __backup_queue(self):
+        """
+        Private function. Backs up the current state of the queue in backup properties.
+        Called when performing an action, to allow undo-ing the most recent command.
+        """
+        self.__backup_players = self.players
+        self.__backup_delayed_players = self.delayed_players
+        self.__backup_current_players = self.current_players
+        self.__backup_waiting_players = self.waiting_players
