@@ -6,7 +6,7 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 import os
 
 # Local import
-from overwatch_queue import find_player, Player, Overwatch_Queue
+from overwatch_queue import Player, Overwatch_Queue
 from battlenet_interface import Battlenet_Account
 from storage_layer import Storage
 
@@ -69,7 +69,7 @@ def create_bot() -> Overwatch_Bot:
     @bot.command(name='queue', help='Starts an Overwatch queue.')
     async def start_queue(ctx):
         message = "A queue already exists.\n" if bot.queue.players else ""
-        if find_player(bot.queue, ctx.message.author.name):
+        if bot.queue.find_player(ctx.message.author.name):
             response = message + f"{ctx.message.author.name} is already in the queue."
         else:
             message = bot.queue.add_player(Player(ctx.message.author.name))
@@ -81,7 +81,7 @@ def create_bot() -> Overwatch_Bot:
     @bot.command(name='join', help='Join the Overwatch queue.')
     async def join_queue(ctx):
         message = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
-        if find_player(bot.queue, ctx.message.author.name):
+        if bot.queue.find_player(ctx.message.author.name):
             response = f"{ctx.message.author.name} is already in the queue."
         else:
             response = message + bot.queue.add_player(Player(ctx.message.author.name))
@@ -94,7 +94,7 @@ def create_bot() -> Overwatch_Bot:
         if not bot.queue.players:
             response = bot.no_queue_response
         else:
-            player = find_player(bot.queue, ctx.message.author.name)
+            player = bot.queue.find_player(ctx.message.author.name)
             if player:
                 bot.queue.delete_player(player)
                 response = f"{ctx.message.author.name} has been removed from the queue."
@@ -126,7 +126,7 @@ def create_bot() -> Overwatch_Bot:
     # See the wait of a player.
     @bot.command(name='wait', help='See how long until your next game.')
     async def wait_queue(ctx):
-        player = find_player(bot.queue, ctx.message.author.name)
+        player = bot.queue.find_player(ctx.message.author.name)
         if not bot.queue.players:
             response = bot.no_queue_response
         elif player:
@@ -140,7 +140,7 @@ def create_bot() -> Overwatch_Bot:
     @bot.command(name='add', help='Add a player to the queue.')
     async def kick_player(ctx, arg=""):
         message = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
-        if find_player(bot.queue, arg):
+        if bot.queue.find_player(arg):
             response = f"{arg} is already in the queue."
         else:
             response = message + bot.queue.add_player(Player(arg))
@@ -157,7 +157,7 @@ def create_bot() -> Overwatch_Bot:
         elif not arg:
             response = "Type \'!kick \' followed by the Discord name of the player to remove them."
         else:
-            player = find_player(bot.queue, arg)
+            player = bot.queue.find_player(arg)
             if player:
                 bot.queue.delete_player(player)
                 response = f"{arg} has been removed from the queue."
@@ -172,7 +172,7 @@ def create_bot() -> Overwatch_Bot:
         if not bot.queue.players:
             response = bot.no_queue_response
         else:
-            player = find_player(bot.queue, ctx.message.author.name)
+            player = bot.queue.find_player(ctx.message.author.name)
             if player:
                 message = bot.queue.delay_player(player)
                 response = f"{ctx.message.author.name} is now delaying their games. Type \'!rejoin\' to stop."
@@ -188,7 +188,7 @@ def create_bot() -> Overwatch_Bot:
         if not bot.queue.players:
             response = bot.no_queue_response
         else:
-            player = find_player(bot.queue, ctx.message.author.name)
+            player = bot.queue.find_player(ctx.message.author.name)
             if player and player.delaying:
                 message = bot.queue.rejoin_player(player)
                 response = f"{ctx.message.author.name} is no longer delaying their games."
@@ -197,6 +197,15 @@ def create_bot() -> Overwatch_Bot:
                 response = f"{ctx.message.author.name} was not delaying games."
             else:
                 response = f"{ctx.message.author.name} is not a player in the queue."
+        await ctx.send(response)
+
+
+    # Undo the previous command
+    @bot.command(name='undo', help='Undo the previous command issued.')
+    async def undo_queue(ctx):
+        message = bot.queue.undo_command()
+        response = "Previous command has been undone. The status of the queue now is:\n\n"
+        response = response + message
         await ctx.send(response)
         
 

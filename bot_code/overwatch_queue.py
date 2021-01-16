@@ -289,11 +289,19 @@ class Overwatch_Queue():
         """
         Undoes the previous command.
         Replaces all current class properties x with the __backup_x property instead.
+
+        Returns:
+            message (str): The message from self.print_players()
         """
+        # Undo previous operation
         self.players = self.__backup_players
         self.delayed_players = self.__backup_delayed_players
         self.current_players = self.__backup_current_players
         self.waiting_players = self.__backup_waiting_players
+
+        # Return current state of queue
+        message = self.print_players()
+        return message
 
     
     def __rotate_queue_once(self):
