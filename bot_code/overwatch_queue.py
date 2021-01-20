@@ -7,6 +7,7 @@ Below these classes are common funtions for interacting with these classes.
 # Standard library imports
 import datetime
 from collections import deque
+from copy import deepcopy
 from math import floor
 
 
@@ -336,7 +337,7 @@ class Overwatch_Queue():
         Private function. Backs up the current state of the queue in backup properties.
         Called when performing an action, to allow undo-ing the most recent command.
         """
-        self.__backup_players = self.players
-        self.__backup_delayed_players = self.delayed_players
-        self.__backup_current_players = self.current_players
-        self.__backup_waiting_players = self.waiting_players
+        self.__backup_players = deepcopy(self.players)
+        self.__backup_delayed_players = deepcopy(self.delayed_players)
+        self.__backup_current_players = deepcopy(self.current_players)
+        self.__backup_waiting_players = deepcopy(self.waiting_players)
