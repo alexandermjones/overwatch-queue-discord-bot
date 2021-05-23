@@ -219,6 +219,19 @@ def create_bot() -> Overwatch_Bot:
             response = "The queue has been ended. Type \'!queue\' to start a new queue."
         await ctx.send(response)
 
-
+    
+    # Error handling
+    @bot.event
+    async def on_command_error(ctx, error):
+        if isinstance(error, commands.CommandNotFound):
+            await ctx.send("**Invalid command. Try using** `help` **to figure out commands!**")
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send('**Please pass in all requirements.**')
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send("**You dont have all the requirements or permissions for using this command :angry:**")
+        if isinstance(error, commands.errors.CommandInvokeError):
+            await ctx.send("**There was aconnection error somewhere, why don't you try again in a few seconds?**")
+            
+        
     print("Bot created")
     return bot
