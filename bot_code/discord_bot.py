@@ -247,19 +247,15 @@ def create_bot() -> Overwatch_Bot:
         for message in messages:
             print(bot.patch_channel)
             print(bot.get_channel(bot.patch_channel))
-            for channel in bot.get_all_channels():
-                await channel.send(message)
+            await bot.get_channel(bot.patch_channel).send(message)
             sleep(1)
-        print("NOW")
-        await bot.get_channel(bot.patch_channel).send("TEST")
 
 
     @bot.event
     async def on_ready():
-        print("Bot created as:")
-        print(bot.user.name)
-        bot.patch_channel = os.getenv('DISCORD_PATCH_CHANNEL')
-        check_patch.start()        
+        print(f"Bot created as: {bot.user.name}")
+        bot.patch_channel = int(os.getenv('DISCORD_PATCH_CHANNEL'))
+        check_patch.start()
 
     
     return bot
