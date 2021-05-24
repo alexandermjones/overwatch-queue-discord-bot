@@ -20,6 +20,7 @@ class Overwatch_Patch_Scraper():
         """
         self.live_patches_url = 'https://playoverwatch.com/en-us/news/patch-notes/live'
         self.experimental_patches_url = 'https://playoverwatch.com/en-us/news/patch-notes/experimental'
+        self.livepatchfpath = os.path.join("db", ".livepatchdate")
         latest_live_patch_date = self.__get_patch_date(self.get_latest_patch(self.live_patches_url))
         # Create a patch date file with the date of latest patch
         with open(".livepatchdate", "w") as f:
