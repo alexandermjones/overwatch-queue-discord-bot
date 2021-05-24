@@ -106,7 +106,7 @@ class Overwatch_Patch_Scraper():
             for i, patch_note in enumerate(patch_notes):
                 try:
                     patch_title = patch_titles[i].get_text()
-                    patch_note_string += f"\n\n**{patch_title}**\n"
+                    patch_note_string += f"\n\n**{patch_title}**"
                 except IndexError:
                 # No patch_title for events and possibly other patches, so just add new line here
                     patch_note_string += "\n"
@@ -153,7 +153,7 @@ class Overwatch_Patch_Scraper():
                 messages.append(second_patch_segment)
                 done = True
         # Remove any empty second_patch_segment at the end
-        [message for message in messages if message]
+        messages = [message.strip() for message in messages if message.strip()]
         return messages
 
 
