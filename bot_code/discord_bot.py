@@ -3,8 +3,8 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 """
 
 # Standard library imports.
+from asyncio import sleep
 import os
-from time import sleep
 
 # Local import
 from overwatch_queue import Player, Overwatch_Queue
@@ -238,12 +238,13 @@ def create_bot() -> Overwatch_Bot:
 
     # Check for any new patch each hour
     @tasks.loop(seconds = 3600)
-    async def check_patch(ctx):
+    async def check_patch():
         #if bot.scraper.check_for_new_live_patch():
         messages = bot.scraper.prepare_new_live_patch_notes()
         for message in messages:
             if message:
-                ctx.send(message)
+                for channel in bot.get_all_channels():
+                    await channel.send(message)
                 sleep(3)
         
 
