@@ -4,6 +4,7 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 
 # Standard library imports.
 from asyncio import sleep
+from dotenv import load_dotenv
 import os
 
 # Local import
@@ -36,6 +37,8 @@ class Overwatch_Bot(commands.Bot):
         self.queue = Overwatch_Queue()
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
         self.scraper = Overwatch_Patch_Scraper()
+        load_dotenv()
+        self.patch_channel = os.getenv('PATCH_CHANNEL')
 
 
 def create_bot() -> Overwatch_Bot:
@@ -243,9 +246,8 @@ def create_bot() -> Overwatch_Bot:
         messages = bot.scraper.prepare_new_live_patch_notes()
         for message in messages:
             if message:
-                for channel in bot.get_all_channels():
-                    await channel.send(message)
-                sleep(3)
+                await bot.patch_channel.send(message)
+                sleep(1)
         
 
     print("Bot created")
