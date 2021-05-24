@@ -9,7 +9,7 @@ import os
 # Local import
 from overwatch_queue import Player, Overwatch_Queue
 from battlenet_interface import Battlenet_Account
-from bot_code.patch_scraper import Overwatch_Patch_Scraper
+from patch_scraper import Overwatch_Patch_Scraper
 from storage_layer import Storage
 
 # Third party imports.
