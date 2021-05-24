@@ -8,10 +8,11 @@ import os
 # Local import
 from overwatch_queue import Player, Overwatch_Queue
 from battlenet_interface import Battlenet_Account
+from patch_scraper import Overwatch_Patch_Scraper
 from storage_layer import Storage
 
 # Third party imports.
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 # Create global variables
 db = Storage()
@@ -19,7 +20,7 @@ db = Storage()
 class Overwatch_Bot(commands.Bot):
     """
     Class for Overwatch Discord Bot, inherits from a Discord bot with
-    an added Overwatch_Queue object attached.
+    a added Overwatch_Queue and scraper objects attached.
 
     :param commands.Bot Discord class for an Overwatch bot
     """
@@ -33,6 +34,7 @@ class Overwatch_Bot(commands.Bot):
         super().__init__(command_prefix=command_prefix)
         self.queue = Overwatch_Queue()
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
+        self.scraper = Overwatch_Patch_Scraper()
 
 
 def create_bot() -> Overwatch_Bot:
