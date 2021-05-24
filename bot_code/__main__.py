@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from bot_code.discord_bot import create_bot
+from discord_bot import create_bot
 from os import getenv
 
 # Load in Discord token.
