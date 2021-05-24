@@ -20,28 +20,26 @@ class Overwatch_Patch_Scraper():
         """
         self.live_patches_url = 'https://playoverwatch.com/en-us/news/patch-notes/live'
         self.experimental_patches_url = 'https://playoverwatch.com/en-us/news/patch-notes/experimental'
-        self.latest_live_patch = self.get_latest_patch(self.live_patches_url)
-        # Create a patch date file if we don't already have one
-        if not os.path.exists(".livepatchdate"):
-            with open(".livepatchdate", "w") as f:
-                f.write(self.get_patch_date(self.latest_patch))
+        latest_live_patch_date = self.__get_patch_date(self.get_latest_patch(self.live_patches_url))
+        # Create a patch date file with the date of latest patch
+        with open(".livepatchdate", "w") as f:
+            f.write(latest_live_patch_date)
 
 
     def get_latest_patch(self, url: str):
         """
         ...
         """
-        latest_patch = self.get_patch_i(url, 0)
-        self.latest_patch = latest_patch
+        latest_patch = self.__get_patch_i(url, 0)
         return latest_patch
 
     
-    def check_patch_date(self):
+    def check_for_new_live_patch(self):
         """
         ...
-        bs4.element.Tag
         """
-        patch_date = self.get_patch_date(self.latest_live_patch)
+        latest_patch = self.get_patch_date(self.latest_live_patch)
+        patch_date = self.__get_patch_date(latest_patch)
         with open(".livepatchdate", "r") as f:
             old_patch_date = f.read()
         
@@ -53,7 +51,35 @@ class Overwatch_Patch_Scraper():
         return new_patch
 
 
-    def write_patch_notes(self, patch):
+    def prepare_new_live_patch_notes(self):
+        """
+        ...
+        """
+        latest_patch = self.get_latest_patch(self.get_latest_patch(self.live_patches_url))
+        patch_notes = self.__write_patch_notes(latest_patch)
+        messages = self.__create_messages(patch_notes)
+        return messages
+
+
+    def __get_patch_date(self, patch):
+        """
+        ...
+        """
+        patch_date = patch.find("div", class_="PatchNotes-date").get_text()
+        return patch_date
+    
+
+    def __get_patch_i(self, url: str, i: int):
+        """
+        ...
+        """
+        response = requests.get(url)
+        patches_page = BeautifulSoup(response.text, 'html.parser')
+        patch = patches_page.find_all("div", class_="PatchNotes-patch")[i]
+        return patch
+
+    
+    def __write_patch_notes(self, patch):
         """
         ...
         """
@@ -100,7 +126,20 @@ class Overwatch_Patch_Scraper():
         return patch_note_string
 
 
-    def create_messages(self, patch_note_string):
+    def __split_message(patch_segment, second_patch_segment):
+        """
+        ...
+        """
+        if len(patch_segment) > 2000:
+            patch_section_index = patch_segment.rindex("__**", 0, 2000)
+            second_patch_segment = patch_segment[patch_section_index:]
+            patch_segment = patch_segment[:patch_section_index]
+        else:
+            second_patch_segment = ""
+        return patch_segment, second_patch_segment
+
+
+    def __create_messages(self, patch_note_string):
         """
         ...
         """
@@ -114,37 +153,6 @@ class Overwatch_Patch_Scraper():
                 messages.append(second_patch_segment)
                 done = True
         return messages
-
-
-    def __get_patch_date(self, patch):
-        """
-        ...
-        """
-        patch_date = patch.find("div", class_="PatchNotes-date").get_text()
-        return patch_date
-    
-
-    def __get_patch_i(self, url: str, i: int):
-        """
-        ...
-        """
-        response = requests.get(url)
-        patches_page = BeautifulSoup(response.text, 'html.parser')
-        patch = patches_page.find_all("div", class_="PatchNotes-patch")[i]
-        return patch
-
-
-    def __split_message(patch_segment, second_patch_segment):
-        """
-        ...
-        """
-        if len(patch_segment) > 2000:
-            patch_section_index = patch_segment.rindex("__**", 0, 2000)
-            second_patch_segment = patch_segment[patch_section_index:]
-            patch_segment = patch_segment[:patch_section_index]
-        else:
-            second_patch_segment = ""
-        return patch_segment, second_patch_segment
 
 
 

@@ -4,11 +4,12 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 
 # Standard library imports.
 import os
+from time import sleep
 
 # Local import
 from overwatch_queue import Player, Overwatch_Queue
 from battlenet_interface import Battlenet_Account
-from patch_scraper import Overwatch_Patch_Scraper
+from bot_code.patch_scraper import Overwatch_Patch_Scraper
 from storage_layer import Storage
 
 # Third party imports.
@@ -222,7 +223,7 @@ def create_bot() -> Overwatch_Bot:
         await ctx.send(response)
 
     
-    # Error handling
+    # Error handling for commands
     @bot.event
     async def on_command_error(ctx, error):
         if isinstance(error, commands.CommandNotFound):
@@ -233,7 +234,19 @@ def create_bot() -> Overwatch_Bot:
             await ctx.send("**You dont have all the requirements or permissions for using this command :angry:**")
         if isinstance(error, commands.errors.CommandInvokeError):
             await ctx.send("**There was aconnection error somewhere, why don't you try again in a few seconds?**")
-            
+
+
+    # Check for any new patch each hour
+    @tasks.loop(seconds = 3600)
+    async def check_patch(ctx):
+        #if bot.scraper.check_for_new_live_patch():
+        messages = bot.scraper.prepare_new_live_patch_notes()
+        for message in messages:
+            if message:
+                ctx.send(message)
+                sleep(3)
         
+
     print("Bot created")
+    check_patch.start()
     return bot
