@@ -245,9 +245,7 @@ def create_bot() -> Overwatch_Bot:
         #if bot.scraper.check_for_new_live_patch():
         messages = bot.scraper.prepare_new_live_patch_notes()
         for message in messages:
-            print("Sending patch message")
-            print(message)
-            await bot.patch_channel.send(message)
+            await bot.get_channel(bot.patch_channel).send(message)
             sleep(1)
 
 
