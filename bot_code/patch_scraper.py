@@ -38,7 +38,7 @@ class Overwatch_Patch_Scraper():
         """
         ...
         """
-        latest_patch = self.get_patch_date(self.latest_live_patch)
+        latest_patch = self.get_latest_patch(self.latest_live_patch)
         patch_date = self.__get_patch_date(latest_patch)
         with open(".livepatchdate", "r") as f:
             old_patch_date = f.read()
@@ -55,9 +55,9 @@ class Overwatch_Patch_Scraper():
         """
         ...
         """
-        latest_patch = self.get_latest_patch(self.get_latest_patch(self.live_patches_url))
-        patch_notes = self.__write_patch_notes(latest_patch)
-        messages = self.__create_messages(patch_notes)
+        latest_patch = self.get_latest_patch(self.live_patches_url)
+        patch_note_string = self.__write_patch_notes(latest_patch)
+        messages = self.__create_messages(patch_note_string)
         return messages
 
 
@@ -126,7 +126,7 @@ class Overwatch_Patch_Scraper():
         return patch_note_string
 
 
-    def __split_message(patch_segment, second_patch_segment):
+    def __split_message(self, patch_segment: str, second_patch_segment: str):
         """
         ...
         """
@@ -139,30 +139,26 @@ class Overwatch_Patch_Scraper():
         return patch_segment, second_patch_segment
 
 
-    def __create_messages(self, patch_note_string):
+    def __create_messages(self, patch_note_string: str):
         """
         ...
         """
         messages = []
         done = False
-        patch_segment, second_patch_half = patch_note_string, ""
+        patch_segment, second_patch_segment = patch_note_string, ""
         while done == False:
             patch_segment, second_patch_segment = self.__split_message(patch_segment, second_patch_segment)
             messages.append(patch_segment)
             if len(second_patch_segment) < 2000:
                 messages.append(second_patch_segment)
                 done = True
+        # Remove any empty second_patch_segment at the end
+        [message for message in messages if message]
         return messages
-
-
-
 
 
 if __name__ == "__main__":
     scraper = Overwatch_Patch_Scraper()
-    scraper.get_latest_patch(scraper.live_patches_url)
-    #patch_note_string = scraper.write_patch_notes(scraper.latest_patch)
-    #messages = create_messages(patch_note_string)
-    #for m in messages:
-    #    print(m)
-    #    print("NEW MESSAGE")
+    messages = scraper.prepare_new_live_patch_notes()
+    for message in messages:
+        print(message)

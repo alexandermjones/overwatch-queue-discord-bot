@@ -245,16 +245,16 @@ def create_bot() -> Overwatch_Bot:
         #if bot.scraper.check_for_new_live_patch():
         messages = bot.scraper.prepare_new_live_patch_notes()
         for message in messages:
-            if message:
-                await bot.patch_channel.send(message)
-                sleep(1)
+            print("Sending patch message")
+            print(message)
+            await bot.patch_channel.send(message)
+            sleep(1)
 
 
     @bot.event
     async def on_ready():
         print("Bot created as:")
         print(bot.user.name)
-        print("------")
         check_patch.start()        
 
     
