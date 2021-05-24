@@ -38,7 +38,7 @@ class Overwatch_Bot(commands.Bot):
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
         self.scraper = Overwatch_Patch_Scraper()
         load_dotenv()
-        self.patch_channel = os.getenv('DISCORD_PATCH_CHANNEL')
+        self.patch_channel = None
 
 
 def create_bot() -> Overwatch_Bot:
@@ -247,7 +247,7 @@ def create_bot() -> Overwatch_Bot:
         for message in messages:
             print(bot.patch_channel)
             print(bot.get_channel(bot.patch_channel))
-            for channel in bot.get_all_channels:
+            for channel in bot.get_all_channels():
                 await channel.send(message)
             sleep(1)
         print("NOW")
@@ -258,6 +258,7 @@ def create_bot() -> Overwatch_Bot:
     async def on_ready():
         print("Bot created as:")
         print(bot.user.name)
+        bot.patch_channel = os.getenv('DISCORD_PATCH_CHANNEL')
         check_patch.start()        
 
     
