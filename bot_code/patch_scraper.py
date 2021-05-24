@@ -38,7 +38,7 @@ class Overwatch_Patch_Scraper():
         """
         ...
         """
-        latest_patch = self.get_latest_patch(self.latest_live_patch)
+        latest_patch = self.get_latest_patch(self.live_patches_url)
         patch_date = self.__get_patch_date(latest_patch)
         with open(".livepatchdate", "r") as f:
             old_patch_date = f.read()
