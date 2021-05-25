@@ -252,7 +252,7 @@ def create_bot() -> Overwatch_Bot:
 
     # Ask for patches to stop being posted into this channel
     @bot.command(name='stoppatchnotes', help='The bot will stop posting Overwatch patch notes to this channel.')
-    async def add_patch_channel(ctx: commands.Context):
+    async def remove_patch_channel(ctx: commands.Context):
         current_patch_channels = bot.get_patch_channels()
         current_channel = ctx.channel.id
         current_patch_channels.remove(current_channel)
