@@ -3,6 +3,7 @@
 """
 
 # Standard library imports
+from datetime import datetime
 import os
 import requests
 
@@ -54,6 +55,9 @@ class Overwatch_Patch_Scraper():
         """
         latest_patch = self.get_latest_patch(self.live_patches_url)
         patch_date = self.__get_patch_date(latest_patch)
+        # If something goes wrong here, then patch_date is empty string, so ignore this attempt
+        if not patch_date:
+            return False
         with open(self.live_patch_date_fpath, "r") as f:
             old_patch_date = f.read()
         
@@ -85,8 +89,15 @@ class Overwatch_Patch_Scraper():
         Returns:
             patch_date (str) The date of the patch.
         """
-        patch_date = patch.find("div", class_="PatchNotes-date").get_text()
-        return patch_date
+        patch_date_string = patch.find("div", class_="PatchNotes-date").get_text()
+        try:
+            patch_date = datetime.strptime(patch_date_string, "%B %d, %Y")
+            patch_date_normal = datetime.strftime(patch_date, "%d %B, %Y")
+        # If this goes wrong assume we've had a connection/scraping issue, and set it as empty string
+        # TODO find the error for trying to format a corrupted dt and make this more elegant
+        except:
+            patch_date_normal = ""
+        return patch_date_normal
     
 
     def __get_patch_i(self, url: str, i: int):
