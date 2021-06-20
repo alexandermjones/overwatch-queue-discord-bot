@@ -4,14 +4,16 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 
 # Standard library imports.
 import os
+from pathlib import Path
 
 # Local import
 from overwatch_queue import Player, Overwatch_Queue
 from battlenet_interface import Battlenet_Account
+from patch_scraper import Overwatch_Patch_Scraper
 from storage_layer import Storage
 
 # Third party imports.
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 # Create global variables
 db = Storage()
@@ -19,7 +21,7 @@ db = Storage()
 class Overwatch_Bot(commands.Bot):
     """
     Class for Overwatch Discord Bot, inherits from a Discord bot with
-    an added Overwatch_Queue object attached.
+    a added Overwatch_Queue and scraper objects attached.
 
     :param commands.Bot Discord class for an Overwatch bot
     """
@@ -33,6 +35,19 @@ class Overwatch_Bot(commands.Bot):
         super().__init__(command_prefix=command_prefix)
         self.queue = Overwatch_Queue()
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
+        self.scraper = Overwatch_Patch_Scraper()
+        self.patch_channel_fpath = os.path.join("db", "patchchannels")
+        if not os.path.exists(self.patch_channel_fpath):
+            Path(self.patch_channel_fpath).touch()
+
+
+    def get_patch_channels(self):
+        """
+        Gets the current patch channels
+        """
+        with open(self.patch_channel_fpath, "r") as f:
+            current_patch_channels = f.readlines()
+        return current_patch_channels
 
 
 def create_bot() -> Overwatch_Bot:
@@ -219,6 +234,61 @@ def create_bot() -> Overwatch_Bot:
             response = "The queue has been ended. Type \'!queue\' to start a new queue."
         await ctx.send(response)
 
+    
+    # Ask for patches to be posted into this channel
+    @bot.command(name='patchnotes', help='The bot will post Overwatch patch notes to this channel.')
+    async def add_patch_channel(ctx: commands.Context):
+        current_patch_channels = bot.get_patch_channels()
+        current_channel = ctx.channel.id
+        if current_channel in current_patch_channels:
+            response = "This channel already has patches posted here."
+        else:
+            current_patch_channels.append(current_channel)
+            with open(bot.patch_channel_fpath, "w") as f:
+                f.writelines(current_patch_channels)
+            response = "This channel will now have patches posted here."
+        await ctx.send(response)
 
-    print("Bot created")
+
+    # Ask for patches to stop being posted into this channel
+    @bot.command(name='stoppatchnotes', help='The bot will stop posting Overwatch patch notes to this channel.')
+    async def remove_patch_channel(ctx: commands.Context):
+        current_patch_channels = bot.get_patch_channels()
+        current_channel = ctx.channel.id
+        current_patch_channels.remove(current_channel)
+        with open(bot.patch_channel_fpath, "w") as f:
+            f.writelines(current_patch_channels)
+        response = "This channel will no longer have patches posted here."
+        await ctx.send(response)
+
+    
+    # Error handling for commands
+    @bot.event
+    async def on_command_error(ctx, error):
+        if isinstance(error, commands.CommandNotFound):
+            await ctx.send("**Invalid command. Try using** `help` **to figure out commands!**")
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send('**Please pass in all requirements.**')
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send("**You dont have all the requirements or permissions for using this command :angry:**")
+        if isinstance(error, commands.errors.CommandInvokeError):
+            await ctx.send("**There was aconnection error somewhere, why don't you try again in a few seconds?**")
+
+
+    # Check for any new patch each hour
+    @tasks.loop(hours=1)
+    async def check_patch():
+        if bot.scraper.check_for_new_live_patch():
+            messages = bot.scraper.prepare_new_live_patch_notes()
+            for message in messages:
+                for patch_channel in bot.get_patch_channels():
+                    await bot.get_channel(int(patch_channel)).send(message)
+
+
+    @bot.event
+    async def on_ready():
+        print(f"Bot created as: {bot.user.name}")
+        check_patch.start()
+
+    
     return bot
