@@ -77,7 +77,13 @@ class Overwatch_Patch_Scraper():
             messages (list) A list of patch note messages to return.
         """
         latest_patch = self.get_latest_patch(self.live_patches_url)
-        patch_note_string = self.__write_patch_notes(latest_patch)
+        patch_type = self.__check_patch_type(latest_patch)
+        if patch_type == 'generic':
+            patch_note_string = self.__write_patch_notes_generic(latest_patch)
+        elif patch_type == 'hero':
+            patch_note_string = self.__write_patch_notes_hero(latest_patch)
+        else:
+            patch_note_string = self.__write_patch_notes_unknown(latest_patch)
         messages = self.__create_messages(patch_note_string)
         return messages
 
@@ -116,11 +122,32 @@ class Overwatch_Patch_Scraper():
         patch = patches_page.find_all("div", class_="PatchNotes-patch")[i]
         return patch
 
-    
-    def __write_patch_notes(self, patch) -> str:
+
+    def __check_patch_type(self, patch) -> str:
         """
-        Given a patch from get_latest_patch or __get_patch_i converts the text details of the patch
-        into a Discord-friendly string.
+        Given a patch from get_latest_patch or __get_patch_i outputs whether the patch is
+        of 'generic', 'hero' or 'unknown' type.
+
+        # TODO find out if there are other patch types.
+
+        Params:
+            patch (bs4.Tag) A patch from get_latest_patch or __get_patch_i
+
+        Returns
+            patch_type (str) Either 'generic', 'hero' or 'unknown' depending on patch_type.
+        """
+        if len(patch.find_all("div", class_="PatchNotes-section-generic_update")):
+            return 'generic'
+        elif len(patch.find_all("div", class_="PatchNotes-section-hero_update")):
+            return 'hero'
+        else:
+            return 'unknown'
+
+    
+    def __write_patch_notes_generic(self, patch) -> str:
+        """
+        Given a patch from get_latest_patch or __get_patch_i that is of 'generic' type,
+        converts the text details of the patch into a Discord-friendly string.
 
         Params:
             patch (bs4.Tag) A patch from get_latest_patch or __get_patch_i
@@ -168,6 +195,77 @@ class Overwatch_Patch_Scraper():
                         patch_note_text = "\n" + line
                     patch_note_string += f"{patch_note_text}"
         
+        return patch_note_string
+
+
+    def __write_patch_notes_hero(self, patch) -> str:
+        """
+        Given a patch from get_latest_patch or __get_patch_i that is of 'hero' type,
+        converts the text details of the patch into a Discord-friendly string.
+
+        Params:
+            patch (bs4.Tag) A patch from get_latest_patch or __get_patch_i
+        
+        Returns:
+            patch_note_string (str) A pretty string formatted with Discord markup of the patch details.
+        """
+        patch_note_string = f"A new Overwatch patch has been released! Patch notes from: {self.__get_patch_date(patch)}:\n\n"
+        patch_sections = patch.find_all("div", class_="PatchNotesHeroUpdate")
+        first_hero_name = True
+
+        for section in patch_sections:
+            # Some patch notes have a section title - add this to the string in bold
+            hero_name = section.find("h5", class_="PatchNotesHeroUpdate-name")
+            if hero_name:
+                # Add new lines to subsequent section titles
+                if first_hero_name:
+                    first_hero_name = False
+                else:
+                    patch_note_string += "\n\n"
+                patch_note_string += f"__**{hero_name.get_text()}**__"
+                       
+            # Get the title and notes from these sections of patches
+            hero_abilities = section.find_all("div", class_="PatchNotesAbilityUpdate-name")
+            patch_notes = section.find_all("div", class_="PatchNotesAbilityUpdate-detailList")
+
+            # Loop through patches for the notes section and adds their titles and patches to the patch_note_string
+            for i, patch_note in enumerate(patch_notes):
+                try:
+                    patch_title = hero_abilities[i].get_text()
+                    patch_note_string += f"\n\n**{patch_title}**"
+                except IndexError:
+                # No patch_title for events and possibly other patches, so just add new line here
+                    patch_note_string += "\n"
+                # Prettify nested patch notes by making maps/characters (a single word) italics on a new line
+                patch_note_lines = patch_note.get_text().strip().split('\n\n')
+                for i, line in enumerate(patch_note_lines):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    elif len(line.split(" ")) == 1:
+                        patch_note_text = "\n*" + line + "*"
+                        patch_note_text = "\n" + patch_note_text if i > 1 else patch_note_text
+                    else:
+                        patch_note_text = "\n" + line
+                    patch_note_string += f"{patch_note_text}"
+        
+        return patch_note_string
+
+
+    def __write_patch_notes_unknown(self, patch) -> str:
+        """
+        Given a patch from get_latest_patch or __get_patch_i that is of 'unknown' type,
+        provides notification of and link to the patch into a Discord-friendly string.
+
+        Params:
+            patch (bs4.Tag) A patch from get_latest_patch or __get_patch_i
+        
+        Returns:
+            patch_note_string (str) A pretty string formatted with Discord markup of the patch details.
+        """
+        patch_note_string = "A new Overwatch patch has been released! Patch notes from "
+        patch_note_string += self.__get_patch_date(patch)
+        patch_note_string += " can be found at: https://playoverwatch.com/en-us/news/patch-notes/"
         return patch_note_string
 
 
