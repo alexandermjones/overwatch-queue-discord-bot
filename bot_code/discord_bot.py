@@ -239,7 +239,7 @@ def create_bot() -> Overwatch_Bot:
     @bot.command(name='patchnotes', help='The bot will post Overwatch patch notes to this channel.')
     async def add_patch_channel(ctx: commands.Context):
         current_patch_channels = bot.get_patch_channels()
-        current_channel = ctx.channel.id
+        current_channel = str(ctx.channel.id)
         if current_channel in current_patch_channels:
             response = "This channel already has patches posted here."
         else:
@@ -254,7 +254,7 @@ def create_bot() -> Overwatch_Bot:
     @bot.command(name='stoppatchnotes', help='The bot will stop posting Overwatch patch notes to this channel.')
     async def remove_patch_channel(ctx: commands.Context):
         current_patch_channels = bot.get_patch_channels()
-        current_channel = ctx.channel.id
+        current_channel = str(ctx.channel.id)
         current_patch_channels.remove(current_channel)
         with open(bot.patch_channel_fpath, "w") as f:
             f.writelines(current_patch_channels)
