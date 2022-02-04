@@ -170,18 +170,12 @@ class Overwatch_Patch_Scraper():
                     patch_note_string += "\n\n"
                 patch_note_string += f"__**{section_title.get_text()}**__"
                        
-            # Get the title and notes from these sections of patches
-            patch_titles = section.find_all("div", class_="PatchNotesGeneralUpdate-title")
-            patch_notes = section.find_all("div", class_="PatchNotesGeneralUpdate-description")
+            # Get the notes from these sections of patches
+            patch_notes = section.find_all("div", class_="PatchNotes-sectionDescription")
 
             # Loop through patches for the notes section and adds their titles and patches to the patch_note_string
-            for i, patch_note in enumerate(patch_notes):
-                try:
-                    patch_title = patch_titles[i].get_text()
-                    patch_note_string += f"\n\n**{patch_title}**"
-                except IndexError:
-                # No patch_title for events and possibly other patches, so just add new line here
-                    patch_note_string += "\n"
+            for patch_note in patch_notes:
+                patch_note_string += "\n"
                 # Prettify nested patch notes by making maps/characters (a single word) italics on a new line
                 patch_note_lines = patch_note.get_text().strip().split('\n\n')
                 for i, line in enumerate(patch_note_lines):
