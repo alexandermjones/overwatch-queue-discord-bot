@@ -184,7 +184,7 @@ class Overwatch_Patch_Scraper():
                     line = line.strip()
                     if not line:
                         continue
-                    elif len(line.split(" ")) == 1 or line=="Solider 76":
+                    elif len(line.split(" ")) == 1 or line=="Soldier 76":
                         patch_note_text = "\n*" + line + "*"
                         patch_note_text = "\n" + patch_note_text if i > 1 else patch_note_text
                     else:
