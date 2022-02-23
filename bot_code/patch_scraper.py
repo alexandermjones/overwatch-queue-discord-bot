@@ -172,6 +172,8 @@ class Overwatch_Patch_Scraper():
                        
             # Get the notes from these sections of patches
             patch_notes = section.find_all("div", class_="PatchNotes-sectionDescription")
+            alterantive_patch_notes = section.find_all("div", class_="PatchNotesGeneralUpdate-description")
+            patch_notes.extend(alterantive_patch_notes)
 
             # Loop through patches for the notes section and adds their titles and patches to the patch_note_string
             for patch_note in patch_notes:
@@ -182,7 +184,7 @@ class Overwatch_Patch_Scraper():
                     line = line.strip()
                     if not line:
                         continue
-                    elif len(line.split(" ")) == 1:
+                    elif len(line.split(" ")) == 1 or line=="Solider 76":
                         patch_note_text = "\n*" + line + "*"
                         patch_note_text = "\n" + patch_note_text if i > 1 else patch_note_text
                     else:
