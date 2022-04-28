@@ -33,7 +33,7 @@ class Overwatch_Bot(commands.Bot):
         :param command_preix (str) The character that identifies a message as a command to the bot.
         """
         super().__init__(command_prefix=command_prefix)
-        self.queue = Overwatch_Queue()
+        self.queue = Overwatch_Queue(mode=2)
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
         self.scraper = Overwatch_Patch_Scraper()
         self.patch_channel_fpath = os.path.join("db", "patchchannels")
@@ -222,6 +222,20 @@ def create_bot() -> Overwatch_Bot:
         response = "Previous command has been undone. The status of the queue now is:\n\n"
         response = response + message
         await ctx.send(response)
+
+
+    # Change between Overwatch 1 and 2
+    @bot.command(name='game', help='Switch the queue between Overwatch 1 and Overwatch 2.')
+    async def switch_queue(ctx, arg=""):
+        if arg == "1":
+            bot.queue.player_cutoff = 6
+            response = "Switching to a queue of 6 players for Overwatch 1."
+        elif arg == "2":
+            bot.queue.player_cutoff = 5
+            response = "Switching to a queue of 5 players for Overwatch 2."
+        else:
+            response = "Type \'!game \' followed by \'1\' or \'2\' to swtich between Overwatch 1 or 2."
+        await ctx.send(response)    
         
 
     # End the queue.

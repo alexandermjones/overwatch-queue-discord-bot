@@ -11,7 +11,6 @@ from copy import deepcopy
 from math import floor
 
 
-
 class Player():
     """
     An Overwatch player.
@@ -44,7 +43,7 @@ class Overwatch_Queue():
         waiting_players (collections.deque): A deque of players (Player objects) waiting to play
     """
 
-    def __init__(self, players=[]):
+    def __init__(self, mode=1, players=[]):
         """
         Initialise an Overwatch Queue with a list of players.
 
@@ -52,16 +51,18 @@ class Overwatch_Queue():
         added to the waiting_players queue.
 
         Args:
+            mode (int): Whether playing Overwatch 1 or 2
             players (list): The list of players (Player objects) to start the queue.
         """
         self.players = players
         self.delayed_players = []
         self.start_time = datetime.datetime.now()
+        self.player_cutoff = 6 if mode == 1 else 5
         # Create a deque of the first six players.
-        self.current_players = deque(players[:6])
+        self.current_players = deque(players[:self.player_cutoff])
         # Create a deque of all other players.
-        if len(players) > 6:
-            self.waiting_players = deque(players[6:])
+        if len(players) > self.player_cutoff:
+            self.waiting_players = deque(players[self.player_cutoff:])
         else:
             self.waiting_players = deque()
         # Set whether the Player objects are playing or not.
@@ -98,7 +99,7 @@ class Overwatch_Queue():
             return message
         # Add player to queue and current or waiting players.
         self.players.append(player)
-        if len(self.current_players) < 6:
+        if len(self.current_players) < self.player_cutoff:
             self.current_players.append(player)
             player.playing = True
         else:
@@ -108,8 +109,8 @@ class Overwatch_Queue():
         message = f"{player.name} has been added to the queue."
         
         # If twelve players, recommend you have a six v. six.
-        if len(self.players) == 12:
-            message += (f"\nOh damn! {player.name} is the twelth player - is it time for a 6 vs. 6?")
+        if len(self.players) == self.player_cutoff*2:
+            message += (f"\nOh damn! {player.name} is the {self.player_cutoff*2}th player - is it time for two teams?")
         return message
 
 
@@ -171,7 +172,7 @@ class Overwatch_Queue():
         self.__backup_queue()
         player.delaying = False
         self.delayed_players.remove(player)
-        if len(self.current_players) <= 5:
+        if len(self.current_players) <= self.player_cutoff - 1:
             self.current_players.append(player)
             self.waiting_players.remove(player)
             player.playing = True
@@ -214,13 +215,13 @@ class Overwatch_Queue():
             message (str): The message from self.print_players()
         """
         self.__backup_queue()
-        if (len(self.players) - len(self.delayed_players)) <= 6:
+        if (len(self.players) - len(self.delayed_players)) <= self.player_cutoff:
             # No players to swap out
             pass
-        elif (len(self.players) - len(self.delayed_players)) == 7:
+        elif (len(self.players) - len(self.delayed_players)) == self.player_cutoff + 1:
             # Only a single player to swap
             self.__rotate_queue_once()
-        elif (len(self.players) - len(self.delayed_players)) <= 10: 
+        elif (len(self.players) - len(self.delayed_players)) <= self.player_cutoff * 2 - 2:
             # Two players to swap
             self.__rotate_queue_once()
             self.__rotate_queue_once()
@@ -322,7 +323,7 @@ class Overwatch_Queue():
         self.current_players.append(new_player)
         new_player.playing = True              
 
-        if len(self.current_players) > 6:
+        if len(self.current_players) > self.player_cutoff:
             old_player = self.current_players.popleft()
             self.waiting_players.append(old_player)
             old_player.playing = False
