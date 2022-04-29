@@ -32,7 +32,8 @@ class Overwatch_Bot(commands.Bot):
 
         :param command_preix (str) The character that identifies a message as a command to the bot.
         """
-        super().__init__(command_prefix=command_prefix)
+        super().__init__(command_prefix=command_prefix, 
+                         help_command=commands.DefaultHelpCommand(no_category='Commands'))
         self.queue = Overwatch_Queue(mode=2)
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
         self.scraper = Overwatch_Patch_Scraper()
@@ -44,10 +45,24 @@ class Overwatch_Bot(commands.Bot):
     def get_patch_channels(self):
         """
         Gets the current patch channels
+
+        Returns:
+            list
         """
         with open(self.patch_channel_fpath, "r") as f:
             current_patch_channels = f.readlines()
         return current_patch_channels
+
+
+    def get_queue_mode(self):
+        """
+        Gets the mode of the queue.
+
+        Returns:
+            int
+        """
+        queue_mode = 2 if self.queue.player_cutoff == 5 else 1
+        return queue_mode
 
 
 def create_bot() -> Overwatch_Bot:
@@ -88,14 +103,16 @@ def create_bot() -> Overwatch_Bot:
             response = message + f"{ctx.message.author.name} is already in the queue."
         else:
             message = bot.queue.add_player(Player(ctx.message.author.name))
-            response = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" + message
+            mode = bot.get_queue_mode()
+            response = "Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" + message
         await ctx.send(response)
 
 
     # Join queue when requested.
     @bot.command(name='join', help='Join the Overwatch queue.')
     async def join_queue(ctx):
-        message = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
+        mode = bot.get_queue_mode()
+        message = "Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
         if bot.queue.find_player(ctx.message.author.name):
             response = f"{ctx.message.author.name} is already in the queue."
         else:
@@ -216,7 +233,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Undo the previous command
-    @bot.command(name='undo', help='Undo the previous command issued.')
+    @bot.command(name='undo', help='Reset the queue to the previous state.')
     async def undo_queue(ctx):
         message = bot.queue.undo_command()
         response = "Previous command has been undone. The status of the queue now is:\n\n"
