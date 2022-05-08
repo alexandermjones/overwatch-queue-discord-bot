@@ -7,6 +7,9 @@ justfile
 # Ignore patchdate file
 db/.livepatchdate
 
+# Ignore vscode folder
+.vscode
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

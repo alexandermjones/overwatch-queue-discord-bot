@@ -32,8 +32,9 @@ class Overwatch_Bot(commands.Bot):
 
         :param command_preix (str) The character that identifies a message as a command to the bot.
         """
-        super().__init__(command_prefix=command_prefix)
-        self.queue = Overwatch_Queue()
+        super().__init__(command_prefix=command_prefix, 
+                         help_command=commands.DefaultHelpCommand(no_category='Commands'))
+        self.queue = Overwatch_Queue(mode=2)
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
         self.scraper = Overwatch_Patch_Scraper()
         self.patch_channel_fpath = os.path.join("db", "patchchannels")
@@ -44,10 +45,24 @@ class Overwatch_Bot(commands.Bot):
     def get_patch_channels(self):
         """
         Gets the current patch channels
+
+        Returns:
+            list
         """
         with open(self.patch_channel_fpath, "r") as f:
             current_patch_channels = f.readlines()
         return current_patch_channels
+
+
+    def get_queue_mode(self):
+        """
+        Gets the mode of the queue.
+
+        Returns:
+            int
+        """
+        queue_mode = 2 if self.queue.player_cutoff == 5 else 1
+        return queue_mode
 
 
 def create_bot() -> Overwatch_Bot:
@@ -83,19 +98,23 @@ def create_bot() -> Overwatch_Bot:
     # Start queue when requested.
     @bot.command(name='queue', help='Starts an Overwatch queue.')
     async def start_queue(ctx):
-        message = "A queue already exists.\n" if bot.queue.players else ""
         if bot.queue.find_player(ctx.message.author.name):
             response = message + f"{ctx.message.author.name} is already in the queue."
+        elif bot.queue.players:
+            message = "A queue already exists.\n" if bot.queue.players else ""
+            response = message + bot.queue.add_player(Player(ctx.message.author.name))
         else:
-            message = bot.queue.add_player(Player(ctx.message.author.name))
-            response = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" + message
+            mode = bot.get_queue_mode()
+            message = f"Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n"
+            response = message + bot.queue.add_player(Player(ctx.message.author.name))
         await ctx.send(response)
 
 
     # Join queue when requested.
     @bot.command(name='join', help='Join the Overwatch queue.')
     async def join_queue(ctx):
-        message = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
+        mode = bot.get_queue_mode()
+        message = f"Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
         if bot.queue.find_player(ctx.message.author.name):
             response = f"{ctx.message.author.name} is already in the queue."
         else:
@@ -216,12 +235,26 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Undo the previous command
-    @bot.command(name='undo', help='Undo the previous command issued.')
+    @bot.command(name='undo', help='Reset the queue to the previous state.')
     async def undo_queue(ctx):
         message = bot.queue.undo_command()
         response = "Previous command has been undone. The status of the queue now is:\n\n"
         response = response + message
         await ctx.send(response)
+
+
+    # Change between Overwatch 1 and 2
+    @bot.command(name='game', help='Switch the queue between Overwatch 1 and Overwatch 2.')
+    async def switch_queue(ctx, arg=""):
+        if arg == "1":
+            bot.queue.player_cutoff = 6
+            response = "Switching to a queue of 6 players for Overwatch 1."
+        elif arg == "2":
+            bot.queue.player_cutoff = 5
+            response = "Switching to a queue of 5 players for Overwatch 2."
+        else:
+            response = "Type \'!game \' followed by \'1\' or \'2\' to swtich between Overwatch 1 or 2."
+        await ctx.send(response)    
         
 
     # End the queue.
