@@ -98,13 +98,15 @@ def create_bot() -> Overwatch_Bot:
     # Start queue when requested.
     @bot.command(name='queue', help='Starts an Overwatch queue.')
     async def start_queue(ctx):
-        message = "A queue already exists.\n" if bot.queue.players else ""
         if bot.queue.find_player(ctx.message.author.name):
             response = message + f"{ctx.message.author.name} is already in the queue."
+        elif bot.queue.players:
+            message = "A queue already exists.\n" if bot.queue.players else ""
+            response = message + bot.queue.add_player(Player(ctx.message.author.name))
         else:
-            message = bot.queue.add_player(Player(ctx.message.author.name))
             mode = bot.get_queue_mode()
-            response = "Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" + message
+            message = f"Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n"
+            response = message + bot.queue.add_player(Player(ctx.message.author.name))
         await ctx.send(response)
 
 
@@ -112,7 +114,7 @@ def create_bot() -> Overwatch_Bot:
     @bot.command(name='join', help='Join the Overwatch queue.')
     async def join_queue(ctx):
         mode = bot.get_queue_mode()
-        message = "Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
+        message = f"Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
         if bot.queue.find_player(ctx.message.author.name):
             response = f"{ctx.message.author.name} is already in the queue."
         else:
