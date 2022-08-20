@@ -3,11 +3,12 @@ Discord bot to implement the Overwatch Queue from overwatch_order.py.
 """
 
 # Standard library imports.
+import json
 import os
 from pathlib import Path
 
 # Local import
-from overwatch_queue import Player, Overwatch_Queue
+from queue import Player, Game_Queue
 from battlenet_interface import Battlenet_Account
 from patch_scraper import Overwatch_Patch_Scraper
 from storage_layer import Storage
@@ -18,30 +19,48 @@ from discord.ext import commands, tasks
 # Create global variables
 db = Storage()
 
-class Overwatch_Bot(commands.Bot):
+class Queue_Bot(commands.Bot):
     """
-    Class for Overwatch Discord Bot, inherits from a Discord bot with
-    a added Overwatch_Queue and scraper objects attached.
+    Class for a Queue Discord Bot.
+    
+    Inherits from a Discord bot with commands for starting and interacting with queues.
 
-    :param commands.Bot Discord class for an Overwatch bot
+    Non-inherited attributes:
+        queues (dict): The dictionary of queue names and corresponding Game_Queue objects.
+        no_queue_response (str): The default response for there not being a queue.
+        queue_not_specified (str): The default response when the queue name cannot be inferred.
     """
 
     def __init__(self, command_prefix: str):
         """
-        Initialises the Overwatch_Bot
+        Initialises the Queue_Bot.
 
-        :param command_preix (str) The character that identifies a message as a command to the bot.
+        Args:
+            command_prefix (str): The character that identifies a message as a command to the bot.
         """
         super().__init__(command_prefix=command_prefix, 
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
-        self.queue = Overwatch_Queue(mode=2)
+        self.queues = dict()
         self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
+        self.queue_not_specified = "Player needs to specify a queue."
+        self.game_dict_fpath = Path("db") / "game_dict.json"
+        # Create a game dictionary if one isn't present already
+        if not self.game_dict_fpath.exists():
+            with open(self.game_dict_fpath, 'w') as f:
+                json.dump({}, f)
+        # Load the game dictionary
+        with open(self.game_dict_fpath) as f:
+            self.game_dict = json.load(f)
+        
+        # TODO separate these out into a new bot
         self.scraper = Overwatch_Patch_Scraper()
         self.patch_channel_fpath = os.path.join("db", "patchchannels")
         if not os.path.exists(self.patch_channel_fpath):
             Path(self.patch_channel_fpath).touch()
 
-
+    """
+    Private class methods.
+    """
     def get_patch_channels(self):
         """
         Gets the current patch channels
@@ -54,50 +73,53 @@ class Overwatch_Bot(commands.Bot):
         return current_patch_channels
 
 
-    def get_queue_mode(self):
+    def __create_new_queue(self, game_name: str, player_cutoff: int):
         """
-        Gets the mode of the queue.
-
-        Returns:
-            int
+        DOCSTRING
         """
-        queue_mode = 2 if self.queue.player_cutoff == 5 else 1
-        return queue_mode
-
-
-def create_bot() -> Overwatch_Bot:
-    """
-    Create the Overwatch queue bot and give it all the commands.
-
-    Returns:
-        bot (Overwatch_Bot): A bot initialised with all the commands we need.
-    """
-    bot = Overwatch_Bot(command_prefix='!')
-
-    # The commands that can be given to the bot.
-
-    # Associate a discord username with a battlenet tag
-    @bot.command(name='link', help='Link a discord name to a battle net account')
-    async def store_link(ctx, name: str):
-        """Stores the battle net name against the discord user name.
-        Checks for uniqueness and profile state offers a warning if not unique and profile not public
-        name -- the battlenet name with format DisplayName#0000    
-        """
-        acc = Battlenet_Account(name)
-        pub_chk = await acc.public_check
-        response = ''
-        if(acc.valid_battletag and pub_chk ):
-            await db.upsert_player(ctx.message.author.name, name)
-            response += f"{ctx.message.author.name} is now linked to {name}"
+        game_name = game_name.lower()
+        if game_name in self.game_dict:
+            db_player_cutoff = self.game_dict[game_name]
+            if not player_cutoff:
+                self.queues[game_name] = Game_Queue(game_name, db_player_cutoff)
+            elif player_cutoff == db_player_cutoff:
+                self.queues[game_name] = Game_Queue(game_name, player_cutoff)
+            else:
+                self.queues[game_name] = Game_Queue(game_name, player_cutoff)
+                self.__update_player_cutoff(game_name, player_cutoff)
         else:
-            response += f"Something went wrong with error/s:\n {acc.error}"
+            self.queues[game_name] = Game_Queue(game_name, player_cutoff)
+            self.__update_player_cutoff(game_name, player_cutoff)
+        return
 
-        await ctx.send(response)
 
+    def __update_player_cutoff(self, game_name: str, player_cutoff: int) -> None:
+        """
+        DOCSTRING
+        """
+        self.game_dict[game_name] = player_cutoff
+        with open(self.game_dict_fpath, 'w') as f:
+            json.dump(self.game_dict, f)
+        return
+    
 
     # Start queue when requested.
-    @bot.command(name='queue', help='Starts an Overwatch queue.')
-    async def start_queue(ctx):
+    @commands.command(name='queue', help='Starts a Game_Queue for the given game_name.')
+    async def start_queue(self, ctx: commands.Context, game_name: str, player_cutoff: int=0):
+        """
+        DOCSTRING HERE
+        """
+        lower_game_name = game_name.lower()
+        if lower_game_name in self.queues.keys():
+            message = self.queues[lower_game_name].add_player(Player(ctx.message.author.name))
+        else:
+            self.__create_new_queue(lower_game_name, player_cutoff)
+            roles = ctx.guild.roles
+            for role in roles:
+                if lower_game_name in role.name.lower and role.mentionable:
+                    game_name = role.mention
+            message = f"Queue has been created for {game_name}."
+
         if bot.queue.find_player(ctx.message.author.name):
             response = message + f"{ctx.message.author.name} is already in the queue."
         elif bot.queue.players:
@@ -111,8 +133,8 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Join queue when requested.
-    @bot.command(name='join', help='Join the Overwatch queue.')
-    async def join_queue(ctx):
+    @commands.command(name='join', help='Join a queue.')
+    async def join_queue(ctx: commands.Context):
         mode = bot.get_queue_mode()
         message = f"Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
         if bot.queue.find_player(ctx.message.author.name):
@@ -123,7 +145,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Leave queue when requested.
-    @bot.command(name='leave', help='Leave the Overwatch queue.')
+    @commands.command(name='leave', help='Leave the Overwatch queue.')
     async def leave_queue(ctx):
         if not bot.queue.players:
             response = bot.no_queue_response
@@ -138,7 +160,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Switch to the next game.
-    @bot.command(name='next', help='Update the queue for the next game.')
+    @commands.command(name='next', help='Update the queue for the next game.')
     async def next_game_for_queue(ctx):
         if not bot.queue.players:
             response = bot.no_queue_response
@@ -148,7 +170,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # See the status of the queue.
-    @bot.command(name='status', help='See the status of the queue.')
+    @commands.command(name='status', help='See the status of the queue.')
     async def status_queue(ctx):
         if not bot.queue.players:
             response = bot.no_queue_response
@@ -158,7 +180,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # See the wait of a player.
-    @bot.command(name='wait', help='See how long until your next game.')
+    @commands.command(name='wait', help='See how long until your next game.')
     async def wait_queue(ctx):
         player = bot.queue.find_player(ctx.message.author.name)
         if not bot.queue.players:
@@ -171,7 +193,7 @@ def create_bot() -> Overwatch_Bot:
 
     
     # Add a player to the queue.
-    @bot.command(name='add', help='Add a player to the queue.')
+    @commands.command(name='add', help='Add a player to the queue.')
     async def kick_player(ctx, arg=""):
         message = "Overwatch queue has been created. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
         if bot.queue.find_player(arg):
@@ -184,7 +206,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Kick a player from the queue.
-    @bot.command(name='kick', help='Remove a player from the queue.')
+    @commands.command(name='kick', help='Remove a player from the queue.')
     async def kick_player(ctx, arg=""):
         if not bot.queue.players:
             response = bot.no_queue_response
@@ -201,7 +223,7 @@ def create_bot() -> Overwatch_Bot:
 
     
     # Delay your position in the queue when requested.
-    @bot.command(name='delay', help='Temporarily no longer join current players until rejoined.')
+    @commands.command(name='delay', help='Temporarily no longer join current players until rejoined.')
     async def delay_player(ctx):
         if not bot.queue.players:
             response = bot.no_queue_response
@@ -217,7 +239,7 @@ def create_bot() -> Overwatch_Bot:
 
     
     # Rejoin your position in the queue after delaying.
-    @bot.command(name='rejoin', help='Stop delaying games and be able to join current players again.')
+    @commands.command(name='rejoin', help='Stop delaying games and be able to join current players again.')
     async def rejoin_player(ctx):
         if not bot.queue.players:
             response = bot.no_queue_response
@@ -235,7 +257,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Undo the previous command
-    @bot.command(name='undo', help='Reset the queue to the previous state.')
+    @commands.command(name='undo', help='Reset the queue to the previous state.')
     async def undo_queue(ctx):
         message = bot.queue.undo_command()
         response = "Previous command has been undone. The status of the queue now is:\n\n"
@@ -244,7 +266,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Change between Overwatch 1 and 2
-    @bot.command(name='game', help='Switch the queue between Overwatch 1 and Overwatch 2.')
+    @commands.command(name='game', help='Switch the queue between Overwatch 1 and Overwatch 2.')
     async def switch_queue(ctx, arg=""):
         if arg == "1":
             bot.queue.player_cutoff = 6
@@ -258,7 +280,7 @@ def create_bot() -> Overwatch_Bot:
         
 
     # End the queue.
-    @bot.command(name='end', help='End (empty) the current queue.')
+    @commands.command(name='end', help='End (empty) the current queue.')
     async def end_queue(ctx):
         if not bot.queue.players:
             response = "There is no queue to end (the queue has already been ended)."
@@ -269,7 +291,7 @@ def create_bot() -> Overwatch_Bot:
 
     
     # Ask for patches to be posted into this channel
-    @bot.command(name='patchnotes', help='The bot will post Overwatch patch notes to this channel.')
+    @commands.command(name='patchnotes', help='The bot will post Overwatch patch notes to this channel.')
     async def add_patch_channel(ctx: commands.Context):
         current_patch_channels = bot.get_patch_channels()
         current_channel = str(ctx.channel.id)
@@ -284,7 +306,7 @@ def create_bot() -> Overwatch_Bot:
 
 
     # Ask for patches to stop being posted into this channel
-    @bot.command(name='stoppatchnotes', help='The bot will stop posting Overwatch patch notes to this channel.')
+    @commands.command(name='stoppatchnotes', help='The bot will stop posting Overwatch patch notes to this channel.')
     async def remove_patch_channel(ctx: commands.Context):
         current_patch_channels = bot.get_patch_channels()
         current_channel = str(ctx.channel.id)
@@ -296,7 +318,7 @@ def create_bot() -> Overwatch_Bot:
 
     
     # Error handling for commands
-    @bot.event
+    @commands.event
     async def on_command_error(ctx, error):
         if isinstance(error, commands.CommandNotFound):
             await ctx.send("**Invalid command. Try using** `help` **to figure out commands!**")
@@ -310,18 +332,26 @@ def create_bot() -> Overwatch_Bot:
 
     # Check for any new patch each hour
     @tasks.loop(hours=1)
-    async def check_patch():
-        if bot.scraper.check_for_new_live_patch():
+    async def check_patch(self):
+        if self.scraper.check_for_new_live_patch():
             messages = bot.scraper.prepare_new_live_patch_notes()
             for message in messages:
                 for patch_channel in bot.get_patch_channels():
                     await bot.get_channel(int(patch_channel)).send(message)
 
 
-    @bot.event
-    async def on_ready():
-        print(f"Bot created as: {bot.user.name}")
-        check_patch.start()
+    @commands.event
+    async def on_ready(self):
+        print(f"Bot created as: {self.user.name}")
+        self.check_patch.start()
 
-    
+
+def create_bot() -> Queue_Bot:
+    """
+    Create a Queue_Bot with an '!' command prefix.
+
+    Returns:
+        bot (Queue_Bot): A bot initialised with a command prefix of '!'.
+    """
+    bot = Queue_Bot(command_prefix='!')
     return bot

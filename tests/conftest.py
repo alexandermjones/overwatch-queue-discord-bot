@@ -1,6 +1,6 @@
 import pytest
 
-from bot_code.overwatch_queue import Player, Overwatch_Queue
+from bot_code.game_queue import Player, Overwatch_Queue
 
 
 # Create a fixture of five players

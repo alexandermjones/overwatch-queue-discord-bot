@@ -1,11 +1,9 @@
 """
-Class of Overwatch players and a class for a Queue of players.
-
-Below these classes are common funtions for interacting with these classes.
+Class for a Player and class for a Game_Queue of Players.
 """
 
 # Standard library imports
-import datetime
+from datetime import datetime as dt
 from collections import deque
 from copy import deepcopy
 from math import floor
@@ -13,16 +11,17 @@ from math import floor
 
 class Player():
     """
-    An Overwatch player.
+    A player.
 
     Attributes:
         name (str): The name of the Player.
-        playing (bool): Whether a Player is currently playing a game.
+        playing (bool): Whether the Player is currently playing a game.
+        delaying (bool): Whether the Player is currently delaying games.
     """
 
     def __init__(self, name: str):
         """
-        Initialise an Overwatch player.
+        Initialise a player.
 
         Args:
             name (str): The name of the Player.
@@ -33,32 +32,37 @@ class Player():
 
 
 
-class Overwatch_Queue():
+class Game_Queue():
     """
-    A queue of Overwatch players (Player objects)
+    A queue of players (Player objects).
 
     Attributes:
         players (list): The list of all players (Player objects).
+        num_players (int): The number of players for the game.
+        game_name (str): The name of the game the Game_Queue is for.
+        start_time (datetime.datetime): The creation time of the Game_Queue.
         current_players (collections.deque): A deque of players (Player objects) currently playing
         waiting_players (collections.deque): A deque of players (Player objects) waiting to play
     """
 
-    def __init__(self, mode=1, players=[]):
+    def __init__(self, game_name: str, player_cutoff: int, players: list=[]):
         """
-        Initialise an Overwatch Queue with a list of players.
+        Initialise a Game_Queue with the number of players for a game and list of Players.
 
-        The first six players are added into the current_players deque and any other players are
-        added to the waiting_players queue.
+        The first player_cutoff Players are added into the current_players deque and any other players are
+        added to the waiting_players deque.
 
         Args:
-            mode (int): Whether playing Overwatch 1 or 2
-            players (list): The list of players (Player objects) to start the queue.
+            game_name (str): The name of the game the Game_Queue is for.
+            player_cutoff (int): The maximum number of players for the game.
+            players (list, default=[]): The list of players (Player objects) to start the Game_Queue.
         """
         self.players = players
         self.delayed_players = []
-        self.start_time = datetime.datetime.now()
-        self.player_cutoff = 6 if mode == 1 else 5
-        # Create a deque of the first six players.
+        self.start_time = dt.now()
+        self.player_cutoff = player_cutoff
+        self.game_name = game_name
+        # Create a deque of the first player_cutoff players.
         self.current_players = deque(players[:self.player_cutoff])
         # Create a deque of all other players.
         if len(players) > self.player_cutoff:
@@ -82,9 +86,9 @@ class Overwatch_Queue():
         """
         Adds a player to the queue.
 
-        If there are fewer than six plyers, they are added to the current_players deque,
+        If there are fewer than self.player_cutoff players, they are added to the current_players deque,
         else they are added to the waiting_players deque.
-        If they are the twelth player, then it is recommended that a 6 v. 6 is played.
+        If they are the 2*self.player_cutoff player, then it is recommended that two games are played.
 
         Args:
             player (Player): A Player object to add to the queue.
@@ -108,9 +112,9 @@ class Overwatch_Queue():
 
         message = f"{player.name} has been added to the queue."
         
-        # If twelve players, recommend you have a six v. six.
+        # If 2*self.player_cutoff players, recommend you have two games.
         if len(self.players) == self.player_cutoff*2:
-            message += (f"\nOh damn! {player.name} is the {self.player_cutoff*2}th player - is it time for two teams?")
+            message += (f"\nOh neat! {player.name} is the {self.player_cutoff*2}th player - is it time for two games?")
         return message
 
 
@@ -205,11 +209,13 @@ class Overwatch_Queue():
         """
         Changes the current players in the queue for the next game.
 
-        If there are fewer than six players, nothing changes.
-        If there are seven players, then the oldest player is moved to waiting_players and the
+        If there are fewer than self.player_cutoff players, nothing changes.
+        If there are self.player_cutoff + 1 players, then the oldest player is moved to waiting_players and the
         longest waiting player is moved to current_players.
-        If there are more than seven players, then the two oldest players are moved to waiting_players
-        and the two longest waiting players are moved to current_players.
+        If there are betweem self.player_cutoff + 2 and self.player_cutoff * 2 - 2 players, then the two oldest players
+        are moved to waiting_players and the two longest waiting players are moved to current_players.
+        Otherwise if there are self.player_cutoff * 2 - 1 or more players, then the three oldest players are moved to
+        waiting_players and the two longest waiting players are moved to current_players.
 
         Returns:
             message (str): The message from self.print_players()
