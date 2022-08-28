@@ -41,14 +41,14 @@ class Queue_Bot(commands.Bot):
         super().__init__(command_prefix=command_prefix, 
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
         self.queues = dict()
-        self.no_queue_response = "There is no queue. Type \'!queue\' to create one."
-        self.queue_not_specified = "Player needs to specify a queue."
+        self.NO_GAME_PARAM_RESPONSE = "Game to interact with cannot be identified. Please enter it after the command."
+        self.NO_PLAYERCUTOFF_PARAM_RESPONSE = "No player count data exists for that game. Please enter it after the game name in the command."
+        self.NO_QUEUE_RESPONSE = "There is no queue. Type \'!queue [game] [player_number]\' to create one."
         self.game_dict_fpath = Path("db") / "game_dict.json"
         # Create a game dictionary if one isn't present already
         if not self.game_dict_fpath.exists():
             with open(self.game_dict_fpath, 'w') as f:
                 json.dump({}, f)
-        # Load the game dictionary
         with open(self.game_dict_fpath) as f:
             self.game_dict = json.load(f)
         
@@ -73,26 +73,6 @@ class Queue_Bot(commands.Bot):
         return current_patch_channels
 
 
-    def __create_new_queue(self, game_name: str, player_cutoff: int):
-        """
-        DOCSTRING
-        """
-        game_name = game_name.lower()
-        if game_name in self.game_dict:
-            db_player_cutoff = self.game_dict[game_name]
-            if not player_cutoff:
-                self.queues[game_name] = Game_Queue(game_name, db_player_cutoff)
-            elif player_cutoff == db_player_cutoff:
-                self.queues[game_name] = Game_Queue(game_name, player_cutoff)
-            else:
-                self.queues[game_name] = Game_Queue(game_name, player_cutoff)
-                self.__update_player_cutoff(game_name, player_cutoff)
-        else:
-            self.queues[game_name] = Game_Queue(game_name, player_cutoff)
-            self.__update_player_cutoff(game_name, player_cutoff)
-        return
-
-
     def __update_player_cutoff(self, game_name: str, player_cutoff: int) -> None:
         """
         DOCSTRING
@@ -101,52 +81,68 @@ class Queue_Bot(commands.Bot):
         with open(self.game_dict_fpath, 'w') as f:
             json.dump(self.game_dict, f)
         return
+
     
+    def __check_and_lower_game_name_param(self, game_name: str):
+        """
+        DOCSTRING
+        """
+        if game_name:
+            return game_name.lower()
+        elif len(self.queues) == 1:
+            return list(self.queues.keys())[0].lower()
+        else:
+            return ""
+
+    
+    def __check_player_cutoff_param(self, game_name: str, player_cutoff: int):
+        """
+        DOCSTRING
+        """
+        try:
+            assert game_name in self.queues.keys()
+        except:
+            raise ValueError(f"Game named: \'{game_name}\' is not in the queue.")
+        if game_name in self.game_dict:
+            db_player_cutoff = self.game_dict[game_name]
+            if not player_cutoff:
+                player_cutoff = db_player_cutoff
+            if player_cutoff != db_player_cutoff:
+                self.__update_player_cutoff(game_name, player_cutoff)
+        return player_cutoff
+
 
     # Start queue when requested.
-    @commands.command(name='queue', help='Starts a Game_Queue for the given game_name.')
-    async def start_queue(self, ctx: commands.Context, game_name: str, player_cutoff: int=0):
+    @commands.hybrid_command(name='queue', 
+                             aliases=['join'],
+                             help='Join a Game Queue for the given game_name, start queue if none exists.')
+    async def start_queue(self, ctx: commands.Context, game_name: str="", player_cutoff: int=0):
         """
         DOCSTRING HERE
         """
-        lower_game_name = game_name.lower()
-        if lower_game_name in self.queues.keys():
-            message = self.queues[lower_game_name].add_player(Player(ctx.message.author.name))
+        lower_game_name = self.__check_and_lower_game_name_param(self, game_name)
+        if not lower_game_name:
+            response = self.NO_GAME_PARAM_RESPONSE
+        elif lower_game_name in self.queues.keys():
+            response = self.queues[lower_game_name].add_player(Player(ctx.message.author.name))
         else:
-            self.__create_new_queue(lower_game_name, player_cutoff)
-            roles = ctx.guild.roles
-            for role in roles:
-                if lower_game_name in role.name.lower and role.mentionable:
-                    game_name = role.mention
-            message = f"Queue has been created for {game_name}."
-
-        if bot.queue.find_player(ctx.message.author.name):
-            response = message + f"{ctx.message.author.name} is already in the queue."
-        elif bot.queue.players:
-            message = "A queue already exists.\n" if bot.queue.players else ""
-            response = message + bot.queue.add_player(Player(ctx.message.author.name))
-        else:
-            mode = bot.get_queue_mode()
-            message = f"Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n"
-            response = message + bot.queue.add_player(Player(ctx.message.author.name))
-        await ctx.send(response)
-
-
-    # Join queue when requested.
-    @commands.command(name='join', help='Join a queue.')
-    async def join_queue(ctx: commands.Context):
-        mode = bot.get_queue_mode()
-        message = f"Queue has been created for Overwatch {mode}. Type \'!join\' to be added to the queue.\n" if not bot.queue.players else ""
-        if bot.queue.find_player(ctx.message.author.name):
-            response = f"{ctx.message.author.name} is already in the queue."
-        else:
-            response = message + bot.queue.add_player(Player(ctx.message.author.name))
+            player_cutoff = self.__check_player_cutoff_param(lower_game_name, player_cutoff)
+            if not player_cutoff:
+                response = self.NO_PLAYERCUTOFF_PARAM_RESPONSE
+            else:
+                self.queues[game_name] = Game_Queue(game_name, player_cutoff)
+                roles = ctx.guild.roles
+                for role in roles:
+                    if lower_game_name in role.name.lower and role.mentionable:
+                        game_name = role.mention
+                response = f"Queue has been created for {game_name}.\n"
+                response += self.queues[lower_game_name].add_player(Player(ctx.message.author.name))
         await ctx.send(response)
 
 
     # Leave queue when requested.
     @commands.command(name='leave', help='Leave the Overwatch queue.')
-    async def leave_queue(ctx):
+    async def leave_queue(ctx: commands.Context, game_name: str=""):
         if not bot.queue.players:
             response = bot.no_queue_response
         else:
