@@ -118,7 +118,7 @@ class Game_Queue():
         return message
 
 
-    def delete_player(self, player: Player):
+    def delete_player(self, player: Player) -> str:
         """
         Removes a player from the queue.
 
@@ -129,6 +129,9 @@ class Game_Queue():
 
         Args:
             player (Player): A Player object to add to the queue.
+        
+        Returns:
+            str: A message confirming the player has been deleted.
         """
         self.__backup_queue()
         self.players.remove(player)
@@ -139,6 +142,11 @@ class Game_Queue():
                 self.__rotate_queue_once()
         elif player in self.waiting_players:
             self.waiting_players.remove(player)
+        else:
+            return f"{player} is not a member of the queue."
+        message = f"{player} has been removed from the queue.\n"
+        message += self.print_players()
+        return message
 
     
     def delay_player(self, player: Player):
