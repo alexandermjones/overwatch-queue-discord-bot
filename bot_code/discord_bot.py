@@ -9,6 +9,7 @@ from pathlib import Path
 
 # Local import
 from queue import Player, Game_Queue
+from typing import Any
 from battlenet_interface import Battlenet_Account
 from patch_scraper import Overwatch_Patch_Scraper
 from storage_layer import Storage
@@ -18,6 +19,7 @@ from discord.ext import commands, tasks
 
 # Create global variables
 db = Storage()
+
 
 class Queue_Bot(commands.Bot):
     """
@@ -52,12 +54,7 @@ class Queue_Bot(commands.Bot):
                 json.dump({}, f)
         with open(self.__game_dict_fpath) as f:
             self.game_dict = json.load(f)
-        
-        # TODO separate these out into a new bot
-        self.scraper = Overwatch_Patch_Scraper()
-        self.patch_channel_fpath = os.path.join("db", "patchchannels")
-        if not os.path.exists(self.patch_channel_fpath):
-            Path(self.patch_channel_fpath).touch()
+
 
     """
     Private class methods to support commands.
@@ -236,7 +233,9 @@ class Queue_Bot(commands.Bot):
         await ctx.send(response)
 
 
-    @commands.command(name='wait', help='See how long until your next game.')
+    @commands.hybrid_command(name='wait', 
+                             aliases=['time'],
+                             help='See how long until your next game.')
     async def wait_queue(self, ctx: commands.Context, game_name: str='') -> str:
         """
         Command to print the wait time of the messager.
@@ -287,91 +286,240 @@ class Queue_Bot(commands.Bot):
         await ctx.send(response)
 
 
-    # Kick a player from the queue.
-    @commands.command(name='kick', help='Remove a player from the queue.')
-    async def kick_player(ctx, arg=""):
-        if not bot.queue.players:
-            response = bot.no_queue_response
-        elif not arg:
-            response = "Type \'!kick \' followed by the Discord name of the player to remove them."
+    @commands.hybrid_command(name='kick', 
+                             aliases=['remove'],
+                             help='Remove a player from the queue.')
+    async def kick_player(self, ctx: commands.Context, player_to_remove: str='', game_name: str=''):
+        """
+        Command to remove a player to the queue.
+        
+        Args:
+            ctx (commands.Context): The context of the command.
+            player_to_kick (str, default=""): The name of the player to add to the queue.
+            game_name (str, default=""): The name of the game to add the player to.
+
+        Returns:
+            str: The response message to post in the Discord channel the command was sent in.
+        """
+        if not player_to_remove:
+            await ctx.send(f'Please enter {self.command_prefix}kick [PLAYERNAME] [GAMENAME].')
+        lower_game_name = self.__check_and_lower_game_name_param(game_name, player_name=ctx.message.author.name)
+        if not lower_game_name:
+            response = self.NO_GAME_PARAM_RESPONSE
+        elif lower_game_name not in self.queues.keys():
+            response = self.NO_QUEUE_RESPONSE
         else:
-            player = bot.queue.find_player(arg)
+            player = self.queues[lower_game_name].find_player(player_to_remove)
             if player:
-                bot.queue.delete_player(player)
-                response = f"{arg} has been removed from the queue."
+                response = self.queues[lower_game_name].delete_player(player)
             else:
-                response = f"{arg} is not a player in the queue."
+                response = f'{player_to_remove} is not a member of the queue for {lower_game_name}.'
         await ctx.send(response)
 
     
-    # Delay your position in the queue when requested.
     @commands.command(name='delay', help='Temporarily no longer join current players until rejoined.')
-    async def delay_player(ctx):
-        if not bot.queue.players:
-            response = bot.no_queue_response
+    async def delay_player(self, ctx: commands.Context, game_name: str=''):
+        """
+        Command to delay joining the current players queue.
+        
+        Args:
+            ctx (commands.Context): The context of the command.
+            game_name (str, default=""): The name of the game to add the player to.
+
+        Returns:
+            str: The response message to post in the Discord channel the command was sent in.
+        """
+        lower_game_name = self.__check_and_lower_game_name_param(game_name, player_name=ctx.message.author.name)
+        if not lower_game_name:
+            response = self.NO_GAME_PARAM_RESPONSE
+        elif lower_game_name not in self.queues.keys():
+            response = self.NO_QUEUE_RESPONSE
         else:
-            player = bot.queue.find_player(ctx.message.author.name)
+            player = self.queues[lower_game_name].find_player(ctx.message.author.name)
             if player:
-                message = bot.queue.delay_player(player)
-                response = f"{ctx.message.author.name} is now delaying their games. Type \'!rejoin\' to stop."
+                message = self.queues[lower_game_name].delay_player(player)
+                response = f"{ctx.message.author.name} is now delaying their games. Type \'{self.command_prefix}rejoin\' to stop."
                 response += ("\n\n" + message)
             else:
-                response = f"{ctx.message.author.name} is not a player in the queue."
+                response = f"{ctx.message.author.name} is not a player in the queue for {lower_game_name}."
         await ctx.send(response)
 
     
-    # Rejoin your position in the queue after delaying.
     @commands.command(name='rejoin', help='Stop delaying games and be able to join current players again.')
-    async def rejoin_player(ctx):
-        if not bot.queue.players:
-            response = bot.no_queue_response
+    async def rejoin_player(self, ctx: commands.Context, game_name: str=''):
+        """
+        Command to rejoin the current players queue after delaying.
+        
+        Args:
+            ctx (commands.Context): The context of the command.
+            game_name (str, default=""): The name of the game to add the player to.
+
+        Returns:
+            str: The response message to post in the Discord channel the command was sent in.
+        """
+        lower_game_name = self.__check_and_lower_game_name_param('', player_name=ctx.message.author.name)
+        game_name = game_name.lower()
+        if not lower_game_name:
+            response = self.NO_GAME_PARAM_RESPONSE
+        elif lower_game_name not in self.queues.keys():
+            response = self.NO_GAME_PARAM_RESPONSE
+            response = self.NO_QUEUE_RESPONSE
         else:
-            player = bot.queue.find_player(ctx.message.author.name)
+            player = self.queues[lower_game_name].find_player(ctx.message.author.name)
             if player and player.delaying:
-                message = bot.queue.rejoin_player(player)
+                message = self.queues[lower_game_name].rejoin_player(player)
                 response = f"{ctx.message.author.name} is no longer delaying their games."
                 response += ("\n\n" + message)
             elif player and not player.delaying:
                 response = f"{ctx.message.author.name} was not delaying games."
             else:
-                response = f"{ctx.message.author.name} is not a player in the queue."
+                response = f"{ctx.message.author.name} is not a player in the queue for {lower_game_name}."
         await ctx.send(response)
 
 
-    # Undo the previous command
     @commands.command(name='undo', help='Reset the queue to the previous state.')
-    async def undo_queue(ctx):
-        message = bot.queue.undo_command()
-        response = "Previous command has been undone. The status of the queue now is:\n\n"
-        response = response + message
+    async def undo_queue(self, ctx: commands.Context, game_name: str=''):
+        """
+        Command to undo the previous command.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+            game_name (str, default=""): The name of the game to add the player to.
+
+        Returns:
+            str: The response message to post in the Discord channel the command was sent in.
+        """
+        lower_game_name = self.__check_and_lower_game_name_param(game_name, player_name=ctx.message.author.name)
+        if not lower_game_name:
+            response = self.NO_GAME_PARAM_RESPONSE
+        elif lower_game_name not in self.queues.keys():
+            response = self.NO_QUEUE_RESPONSE
+        else:
+            message = self.queues[lower_game_name].undo_command()
+            response = "Previous command has been undone. The status of the queue now is:\n\n"
+            response = response + message
         await ctx.send(response)
 
 
-    # Change between Overwatch 1 and 2
-    @commands.command(name='game', help='Switch the queue between Overwatch 1 and Overwatch 2.')
-    async def switch_queue(ctx, arg=""):
-        if arg == "1":
-            bot.queue.player_cutoff = 6
-            response = "Switching to a queue of 6 players for Overwatch 1."
-        elif arg == "2":
-            bot.queue.player_cutoff = 5
-            response = "Switching to a queue of 5 players for Overwatch 2."
+    @commands.hybrid_command(name='game',
+                             aliases=['switch'],
+                             help='Switch the queue to a different game.')
+    async def switch_queue(self, ctx: commands.Context, game_name: str='', player_cutoff: int=0):
+        """
+        Command to switch the queue to a different game.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+            game_name (str, default=""): The name of the game to switch the queue to.
+            player_cutoff (int, default=0): The player count for the given game_name.
+
+        Returns:
+            str: The response message to post in the Discord channel the command was sent in.
+        """
+        current_game_name = self.__check_and_lower_game_name_param('', player_name=ctx.message.author.name)
+        lower_game_name = game_name.lower()
+        if not lower_game_name:
+            response = self.NO_GAME_PARAM_RESPONSE
+        elif not current_game_name:
+            response = "You do not appear to currently be in a queue. Please join one before switching games."
         else:
-            response = "Type \'!game \' followed by \'1\' or \'2\' to swtich between Overwatch 1 or 2."
+            player_cutoff = self.__check_player_cutoff_param(lower_game_name, player_cutoff)
+            # If player_cutoff can't be inferred, return this needs to be a parameter
+            if not player_cutoff:
+                response = self.NO_PLAYERCUTOFF_PARAM_RESPONSE
+            # Create a new queue for the game, and @mention game if possible.
+            else:
+                players_to_move = self.queues[current_game_name].players.copy()
+                self.queues[current_game_name].empty_queue()
+                self.queues[lower_game_name] = Game_Queue(lower_game_name, player_cutoff, players=players_to_move)
+                roles = ctx.guild.roles
+                for role in roles:
+                    if lower_game_name in role.name.lower and role.mentionable:
+                        game_name = role.mention
+                response = f"Queue has been created for {game_name}.\n"
+                response += self.queues[lower_game_name].add_player(Player(ctx.message.author.name))
         await ctx.send(response)    
         
 
-    # End the queue.
-    @commands.command(name='end', help='End (empty) the current queue.')
-    async def end_queue(ctx):
-        if not bot.queue.players:
-            response = "There is no queue to end (the queue has already been ended)."
+    @commands.hybrid_command(name='end',
+                             aliases=['switch'], 
+                             help='End a current queue.')
+    async def end_queue(self, ctx: commands.Context, game_name: str=''):
+        """
+        Command to end the queue.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+            game_name (str, default=""): The name of the game to add the player to.
+
+        Returns:
+            str: The response message to post in the Discord channel the command was sent in.
+        """
+        lower_game_name = self.__check_and_lower_game_name_param(game_name, player_name=ctx.message.author.name)
+        if not lower_game_name:
+            response = self.NO_GAME_PARAM_RESPONSE
         else:
-            bot.queue.empty_queue()
-            response = "The queue has been ended. Type \'!queue\' to start a new queue."
+            self.queues[game_name].empty_queue()
+            response = "The queue has been ended. Type \'!queue [game_name]\' to start a new queue."
         await ctx.send(response)
 
     
+    """
+    Behaviour for events happening to the bot.
+    """
+    @commands.event
+    async def on_command_error(ctx: commands.Context, error: Any) -> str:
+        """
+        Error handling for errors with a command.
+
+        Args:
+            ctx (commands.Context): The context of the command.
+            error (Any): A commands error.
+
+        Returns:
+            str: The response message to post in the Discord channel the error was received in.
+        """
+        if isinstance(error, commands.CommandNotFound):
+            await ctx.send("**Invalid command. Try using** `help` **to figure out commands!**")
+        if isinstance(error, commands.MissingRequiredArgument):
+            await ctx.send('**Please pass in all requirements to use the command. Try using** `help`**!**')
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send("**You dont have all the requirements or permissions for using this command :angry:**")
+        if isinstance(error, commands.errors.CommandInvokeError):
+            await ctx.send("**There was a connection error somewhere, why don't you try again now?**")
+
+
+    @commands.event
+    async def on_ready(self) -> None:
+        """
+        Message to print in the terminal when the bot is created to confirm its ready.
+        """
+        print(f"Bot created as: {self.user.name}")
+
+
+"""
+NO LONGER IMPLEMENTED - TO BE REFACTORED
+
+        
+        # TODO separate these out into a new bot
+        self.scraper = Overwatch_Patch_Scraper()
+        self.patch_channel_fpath = os.path.join("db", "patchchannels")
+        if not os.path.exists(self.patch_channel_fpath):
+            Path(self.patch_channel_fpath).touch()
+
+
+    self.check_patch.start()
+
+    # Check for any new patch each hour
+    @tasks.loop(hours=1)
+    async def check_patch(self):
+        if self.scraper.check_for_new_live_patch():
+            messages = bot.scraper.prepare_new_live_patch_notes()
+            for message in messages:
+                for patch_channel in bot.get_patch_channels():
+                    await bot.get_channel(int(patch_channel)).send(message)
+
+
     # Ask for patches to be posted into this channel
     @commands.command(name='patchnotes', help='The bot will post Overwatch patch notes to this channel.')
     async def add_patch_channel(ctx: commands.Context):
@@ -397,43 +545,4 @@ class Queue_Bot(commands.Bot):
             f.writelines(current_patch_channels)
         response = "This channel will no longer have patches posted here."
         await ctx.send(response)
-
-    
-    # Error handling for commands
-    @commands.event
-    async def on_command_error(ctx, error):
-        if isinstance(error, commands.CommandNotFound):
-            await ctx.send("**Invalid command. Try using** `help` **to figure out commands!**")
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send('**Please pass in all requirements.**')
-        if isinstance(error, commands.MissingPermissions):
-            await ctx.send("**You dont have all the requirements or permissions for using this command :angry:**")
-        if isinstance(error, commands.errors.CommandInvokeError):
-            await ctx.send("**There was aconnection error somewhere, why don't you try again in a few seconds?**")
-
-
-    # Check for any new patch each hour
-    @tasks.loop(hours=1)
-    async def check_patch(self):
-        if self.scraper.check_for_new_live_patch():
-            messages = bot.scraper.prepare_new_live_patch_notes()
-            for message in messages:
-                for patch_channel in bot.get_patch_channels():
-                    await bot.get_channel(int(patch_channel)).send(message)
-
-
-    @commands.event
-    async def on_ready(self):
-        print(f"Bot created as: {self.user.name}")
-        self.check_patch.start()
-
-
-def create_bot() -> Queue_Bot:
-    """
-    Create a Queue_Bot with an '!' command prefix.
-
-    Returns:
-        bot (Queue_Bot): A bot initialised with a command prefix of '!'.
-    """
-    bot = Queue_Bot(command_prefix='!')
-    return bot
+"""
