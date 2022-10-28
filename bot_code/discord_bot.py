@@ -1,24 +1,18 @@
 """
-Discord bot to implement the Overwatch Queue from overwatch_order.py.
+Discord bot to manage interaction with Game_Queues from game_queue.py.
 """
 
 # Standard library imports.
 import json
-import os
 from pathlib import Path
-
-# Local import
-from queue import Player, Game_Queue
 from typing import Any
-from battlenet_interface import Battlenet_Account
-from patch_scraper import Overwatch_Patch_Scraper
-from storage_layer import Storage
+
+# Local imports.
+from queue import Player, Game_Queue
 
 # Third party imports.
-from discord.ext import commands, tasks
+from discord.ext import commands
 
-# Create global variables
-db = Storage()
 
 
 class Queue_Bot(commands.Bot):
@@ -27,9 +21,11 @@ class Queue_Bot(commands.Bot):
     
     Inherits from a Discord bot with commands for starting and interacting with queues.
 
-    Non-inherited attributes:
+    Non-inherited public attributes:
         queues (dict): The dictionary of queue names and corresponding Game_Queue objects.
         NO_QUEUE_RESPONSE (str): The default response for there not being a queue.
+        NO_PLAYERCUTOFF_PARAM_RESPONSE (str): The default response for there not being a player_number parameter in a command.
+        NO_GAME_PARAM_RESPONSE (str): The default response for there not being a game parameter in a command.
         queue_not_specified (str): The default response when the queue name cannot be inferred.
     """
 
@@ -59,17 +55,6 @@ class Queue_Bot(commands.Bot):
     """
     Private class methods to support commands.
     """
-    def get_patch_channels(self):
-        """
-        Gets the current patch channels
-
-        Returns:
-            list
-        """
-        with open(self.patch_channel_fpath, "r") as f:
-            current_patch_channels = f.readlines()
-        return current_patch_channels
-
 
     def __update_player_cutoff(self, game_name: str, player_cutoff: int) -> None:
         """
@@ -507,6 +492,15 @@ NO LONGER IMPLEMENTED - TO BE REFACTORED
         if not os.path.exists(self.patch_channel_fpath):
             Path(self.patch_channel_fpath).touch()
 
+
+    def get_patch_channels(self):
+        Gets the current patch channels
+
+        Returns:
+            list
+        with open(self.patch_channel_fpath, "r") as f:
+            current_patch_channels = f.readlines()
+        return current_patch_channels
 
     self.check_patch.start()
 
