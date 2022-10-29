@@ -26,7 +26,6 @@ class Queue_Bot(commands.Bot):
         NO_QUEUE_RESPONSE (str): The default response for there not being a queue.
         NO_PLAYERCUTOFF_PARAM_RESPONSE (str): The default response for there not being a player_number parameter in a command.
         NO_GAME_PARAM_RESPONSE (str): The default response for there not being a game parameter in a command.
-        queue_not_specified (str): The default response when the queue name cannot be inferred.
     """
 
     def __init__(self, command_prefix: str):
@@ -58,7 +57,11 @@ class Queue_Bot(commands.Bot):
 
     def __update_player_cutoff(self, game_name: str, player_cutoff: int) -> None:
         """
-        DOCSTRING
+        Updates the player_cutoff for a game in the game_dict.
+
+        Args:
+            game_name (str): The name of the game in the game_dict to update.
+            player_cutoff (int): The new player_cutoff to update with.
         """
         self.game_dict[game_name] = player_cutoff
         with open(self.game_dict_fpath, 'w') as f:
@@ -66,28 +69,42 @@ class Queue_Bot(commands.Bot):
         return
 
     
-    def __check_and_lower_game_name_param(self, game_name: str, player_name: str=""):
+    def __check_and_lower_game_name_param(self, game_name: str='', player_name: str='') -> str:
         """
-        DOCSTRING
+        Infers the game_name parameter if not given and then returns it lowered.
+
+        Args:
+            game_name (str): The name of the game to lower.
+            player_name (str): The name of the player to infer a game_name from.
+
+        Returns:
+            str: The lowered name of the game, if inferrable.
         """
         if game_name:
             return game_name.lower()
+        if len(self.queues) == 1:
+            return list(self.queues.keys())[0].lower()
         player_queues = [name for name in self.queues.keys() if self.queues[name].find_player(player_name)]
         if len(player_queues) == 1:
             return player_queues[0]
-        elif len(self.queues) == 1:
-            return list(self.queues.keys())[0].lower()
         else:
             return ""
 
     
-    def __check_player_cutoff_param(self, game_name: str, player_cutoff: int):
+    def __check_player_cutoff_param(self, game_name: str, player_cutoff: int) -> int:
         """
-        DOCSTRING
+        Get the player_cutoff parameter for game_name, or update this if given.
+
+        Args:
+            game_name (str): The name of the game to check the player_cutoff parameter for.
+            player_cutoff (int): The new player_cutoff to update the game with.
+        
+        Returns:
+            int: The player_cutoff for the given game_name.
         """
         try:
             assert game_name in self.queues.keys()
-        except:
+        except AssertionError:
             raise ValueError(f"Game named: \'{game_name}\' is not in the queue.")
         if game_name in self.game_dict:
             db_player_cutoff = self.game_dict[game_name]

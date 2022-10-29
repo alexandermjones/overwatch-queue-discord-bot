@@ -6,6 +6,8 @@ import pytest
 
 from bot_code.game_queue import *
 
+raise NotImplementedError("Tests no longer implemented correctly. Do not run!")
+
 
 def test_add_player_five_person_queue(five_player_queue):
     new_player = Player("new")
