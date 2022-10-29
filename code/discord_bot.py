@@ -7,11 +7,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-# Local imports.
-from queue import Player, Game_Queue
-
 # Third party imports.
 from discord.ext import commands
+
+# Local imports.
+from queue import Player, Game_Queue
 
 
 
