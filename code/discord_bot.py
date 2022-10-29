@@ -1,5 +1,5 @@
 """
-Discord bot to manage interaction with Game_Queues from game_queue.py.
+Class for Queue_Bot, which is a Discord bot to manage interaction with Game_Queues from game_queue.py.
 """
 
 # Standard library imports.
@@ -28,12 +28,12 @@ class Queue_Bot(commands.Bot):
         NO_GAME_PARAM_RESPONSE (str): The default response for there not being a game parameter in a command.
     """
 
-    def __init__(self, command_prefix: str):
+    def __init__(self, command_prefix: str='!'):
         """
         Initialises the Queue_Bot.
 
         Args:
-            command_prefix (str): The character that identifies a message as a command to the bot.
+            command_prefix (str, default='!'): The character which identifies a message as a command.
         """
         super().__init__(command_prefix=command_prefix, 
                          help_command=commands.DefaultHelpCommand(no_category='Commands'))
@@ -43,6 +43,8 @@ class Queue_Bot(commands.Bot):
         self.NO_PLAYERCUTOFF_PARAM_RESPONSE = "No player count data exists for that game. Please enter it after the game name in the command."
         self.NO_QUEUE_RESPONSE = "There is no queue. Type \'!queue [game_name] [player_number]\' to create one."
         self.__game_dict_fpath = Path("db") / "game_dict.json"
+        # Create a db directory if one doesn't exist already
+        self.__game_dict_fpath.parent.mkdir(exist_ok=True)
         # Create a game dictionary if one isn't present already
         if not self.__game_dict_fpath.exists():
             with open(self.__game_dict_fpath, 'w') as f:
