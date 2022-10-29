@@ -13,10 +13,6 @@ playing in the next game.
 The queue cycles through players two at a time, so all players
 get a chance to play games with minimal fuss.
 
-The bot will optionally post patch notes of latest patch notes to the game into
-a chosen server by running the command !patchnotes.
-The patch scraper class can be used outside of the bot if desired.
-
 ## Installation
 
 Create a .env file in your local version of this folder with the structure:
@@ -48,11 +44,9 @@ Type `!help` in your Discord server to see the available commands:
   leave          Leave the Overwatch queue.
   link           Link a discord name to a battle net account
   next           Update the queue for the next game.
-  patchnotes     The bot will post Overwatch patch notes to this channel.
   queue          Starts an Overwatch queue.
   rejoin         Stop delaying games and be a current player again.
   status         See the status of the queue.
-  stoppatchnotes The bot will stop posting Overwatch patch notes to this channel.
   undo           Undo the previous command issued.
   wait           See how long until your next game.
 ```
