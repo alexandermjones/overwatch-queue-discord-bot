@@ -1,3 +1,6 @@
+"""
+Run the Discord bot by running the directory.
+"""
 # Standard imports
 from os import getenv
 
@@ -5,12 +8,12 @@ from os import getenv
 from dotenv import load_dotenv
 
 # Local imports
-from discord_bot import Queue_Bot
+from queue_bot import QueueBot
 
 # Load in Discord token.
 load_dotenv()
 TOKEN = getenv('DISCORD_TOKEN')
 
 # Create bot and run.
-bot = Queue_Bot(command_prefix='!')
+bot = QueueBot(command_prefix='!')
 bot.run(TOKEN)

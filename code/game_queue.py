@@ -32,7 +32,7 @@ class Player():
 
 
 
-class Game_Queue():
+class GameQueue():
     """
     A queue of players (Player objects).
 

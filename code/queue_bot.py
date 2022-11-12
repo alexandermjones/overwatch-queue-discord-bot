@@ -1,5 +1,5 @@
 """
-Class for Queue_Bot, which is a Discord bot to manage interaction with Game_Queues from game_queue.py.
+Class for QueueBot, which is a Discord bot to manage interaction with GameQueue objects from game_queue.py.
 """
 
 # Standard library imports.
@@ -11,18 +11,18 @@ from typing import Any
 from discord.ext import commands
 
 # Local imports.
-from queue import Player, Game_Queue
+from game_queue import Player, GameQueue
 
 
 
-class Queue_Bot(commands.Bot):
+class QueueBot(commands.Bot):
     """
     Class for a Queue Discord Bot.
     
     Inherits from a Discord bot with commands for starting and interacting with queues.
 
     Non-inherited public attributes:
-        queues (dict): The dictionary of queue names and corresponding Game_Queue objects.
+        queues (dict): The dictionary of queue names and corresponding GameQueue objects.
         NO_QUEUE_RESPONSE (str): The default response for there not being a queue.
         NO_PLAYERCUTOFF_PARAM_RESPONSE (str): The default response for there not being a player_number parameter in a command.
         NO_GAME_PARAM_RESPONSE (str): The default response for there not being a game parameter in a command.
@@ -150,7 +150,7 @@ class Queue_Bot(commands.Bot):
                 response = self.NO_PLAYERCUTOFF_PARAM_RESPONSE
             # Create a new queue for the game, and @mention game if possible.
             else:
-                self.queues[game_name] = Game_Queue(game_name, player_cutoff)
+                self.queues[game_name] = GameQueue(game_name, player_cutoff)
                 roles = ctx.guild.roles
                 for role in roles:
                     if lower_game_name in role.name.lower and role.mentionable:
@@ -435,7 +435,7 @@ class Queue_Bot(commands.Bot):
             else:
                 players_to_move = self.queues[current_game_name].players.copy()
                 self.queues[current_game_name].empty_queue()
-                self.queues[lower_game_name] = Game_Queue(lower_game_name, player_cutoff, players=players_to_move)
+                self.queues[lower_game_name] = GameQueue(lower_game_name, player_cutoff, players=players_to_move)
                 roles = ctx.guild.roles
                 for role in roles:
                     if lower_game_name in role.name.lower and role.mentionable:
