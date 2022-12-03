@@ -1,5 +1,16 @@
 # Overwatch Queue Discord Bot
+
 A Discord bot for managing a queue of Overwatch players.
+
+**DISCONTINUED - superceded [here](https://github.com/alexandermjones/queue-bot)**
+
+Development on this bot has been discontinued in favour of a more general queue bot
+for arbitrary games [here](https://github.com/alexandermjones/queue-bot).
+
+This bot should still work for Overwatch 2 by entering the command `!mode 2` to the bot.
+
+Patches will be separated out into a later bot at a different date, but currently need the patch
+link updating to work correctly.
 
 ## Description
 
